@@ -6,7 +6,7 @@
  * @class TheoraPlayer
  */
 var TheoraPlayer = (function () {
-	var workerPath = "src/Worker.js",
+	var workerPath = "https://raw.github.com/lo1tuma/theorajs/master/src/Worker.js",
 
 		// export
 		Constructor;

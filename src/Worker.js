@@ -1,4 +1,4 @@
-importScripts("../build/theorajs-0.1.js");    
+importScripts("https://raw.github.com/lo1tuma/theorajs/master/build/theorajs-0.1.js");    
 
 	// dependencies
 var	decoder = TheoraJS.Theora.decoder,
