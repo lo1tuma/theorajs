@@ -6,7 +6,7 @@ window.onload = function() {
 		stopTime,
 		player;
 
-	player = new TheoraPlayer('../demo/test-videos/320x240.ogg', "test", "https://raw.github.com/lo1tuma/theorajs/master/src/Worker.js",
+	player = new TheoraPlayer('../demo/test-videos/320x240.ogg', "test", "Worker.js",
 		function startClb() {
 			date = new Date();
 			startTime = date.getTime();
