@@ -118,7 +118,7 @@ function sendFrame (frame) {
 		j += 5;
 	}
 
-	webkitPostMessage({type: "data", frame: view.buffer}, [view.buffer]);
+	postMessage({type: "data", frame: view.buffer}, [view.buffer]);
 }
 
 function decode() {
