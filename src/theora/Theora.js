@@ -1,0 +1,1 @@
+TheoraJS.namespace("Theora");

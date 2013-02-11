@@ -1,0 +1,136 @@
+/**
+		 * Decodes one or more coefficients in the current block for a specific token.
+		 *
+		 * @method decodeCoefficientToken
+		 * @private
+		 * @param {Number} token The token being decoded (Allowed range: 0..6).
+		 * @param {Array} tis Array of the current token index.
+		 * @param {Number} bi The block index in coded order.
+		 * @param {Number} ti The current token index.
+		 */
+		decodeCoefficientToken: function (token, ti) {
+				// A flag indicating the sign of the current coefficient
+			var sign = 1,
+
+				// The magnitude of the current coefficient
+				mag = 0,
+
+				// The length of the current zero run
+				rlen = 0;
+
+			switch (token) {
+			case 7:
+				rlen = this.reader.nextBits(3);
+				break;
+			case 8:
+				rlen = this.reader.nextBits(6);
+				break;
+			case 9:
+				mag = 1;
+				break;
+			case 10:
+				sign = -1;
+				mag = 1;
+				break;
+			case 11:
+				mag = 2;
+				break;
+			case 12:
+				mag = 2;
+				sign = -1;
+				break;
+			case 13:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = 3;
+				break;
+			case 14:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = 4;
+				break;
+			case 15:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = 5;
+				break;
+			case 16:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = 6;
+				break;
+			case 17:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = this.reader.nextBits(1) + 7;
+				break;
+			case 18:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = this.reader.nextBits(2) + 9;
+				break;
+			case 19:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = this.reader.nextBits(3) + 13;
+				break;
+			case 20:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = this.reader.nextBits(4) + 21;
+				break;
+			case 21:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = this.reader.nextBits(5) + 37;
+				break;
+			case 22:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = this.reader.nextBits(9) + 69;
+				break;
+			case 23:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				rlen = 1;
+				mag = 1;
+				break;
+			case 24:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				rlen = 2;
+				mag = 1;
+				break;
+			case 25:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				rlen = 3;
+				mag = 1;
+				break;
+			case 26:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				rlen = 4;
+				mag = 1;
+				break;
+			case 27:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				rlen = 5;
+				mag = 1;
+				break;
+			case 28:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				rlen = this.reader.nextBits(2) + 6;
+				mag = 1;
+				break;
+			case 29:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				rlen = this.reader.nextBits(3) + 10;
+				mag = 1;
+				break;
+			case 30:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = this.reader.nextBits(1) + 2;
+				rlen = 1;
+				break;
+			case 31:
+				sign = this.reader.nextBits(1) === 0 ? 1 : -1;
+				mag = this.reader.nextBits(1) + 2;
+				rlen = this.reader.nextBits(1) + 2;
+				break;
+			default:
+				throw {name: "TheoraError", message: "Unable to decode stream: invalid frame packet."};
+			}
+
+			this.tokenIndex += rlen + 1;
+			if (mag > 0) {
+				this.coeffs[ti + rlen] = mag * sign;
+				this.numberOfCoeffs = this.tokenIndex;
+			}
+		},
