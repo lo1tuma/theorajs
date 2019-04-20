@@ -48,7 +48,7 @@ export class ByteStream {
          * @param {Boolean} [littleEndian=false] Defines the byte-order
          * @return {Number}
          */
-    next16(littleEndian: boolean) {
+    next16(littleEndian?: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
 
@@ -66,7 +66,7 @@ export class ByteStream {
          * @param {Boolean} [littleEndian=false] Defines the byte-order
          * @return {Number}
          */
-    next24(littleEndian: boolean) {
+    next24(littleEndian?: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
@@ -85,7 +85,7 @@ export class ByteStream {
          * @param {Boolean} [littleEndian=false] Defines the byte-order
          * @return {Number}
          */
-    next32(littleEndian: boolean) {
+    next32(littleEndian?: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
@@ -107,7 +107,7 @@ export class ByteStream {
          * @param {Boolean} [littleEndian=false] Defines the byte-order
          * @return {Object}
          */
-    next64(littleEndian: boolean) {
+    next64(littleEndian?: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
