@@ -4,7 +4,7 @@
         "module": "commonjs",
         "declaration": true,
         "outDir": "./build",
-        "rootDir": "./src",
+        "rootDir": "./.",
         "incremental": true,
         "strict": true,
         "noImplicitAny": true,
@@ -17,5 +17,12 @@
         "moduleResolution": "node",
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true
-    }
+    },
+    "include": [
+        "./src/**/*",
+        "./test/**/*"
+    ],
+    "exclude": [
+        "**/theora/**/*"
+    ]
 }
