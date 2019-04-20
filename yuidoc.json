@@ -1,9 +1,0 @@
-{
-	"name": "Theora.js API",
-	"description": "Theora.js is a video decoder for ogg/theora files",
-	"version": "0.1",
-	"options": {
-		"outdir": "docs",
-		"paths": "src"
-	}
-}
