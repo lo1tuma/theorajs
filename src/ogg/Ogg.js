@@ -5,4 +5,4 @@
  * @main Ogg
  * @namespace TheoraJS
  */
-TheoraJS.namespace("Ogg");
+TheoraJS.namespace('Ogg');

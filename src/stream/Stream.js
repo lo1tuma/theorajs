@@ -5,4 +5,4 @@
  * @main Stream
  * @namespace TheoraJS
  */
-TheoraJS.namespace("Stream");
+TheoraJS.namespace('Stream');

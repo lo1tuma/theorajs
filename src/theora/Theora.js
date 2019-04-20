@@ -1,1 +1,1 @@
-TheoraJS.namespace("Theora");
+TheoraJS.namespace('Theora');
