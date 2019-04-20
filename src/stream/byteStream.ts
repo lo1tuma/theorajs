@@ -1,6 +1,5 @@
 export class ByteStream {
     private index: number;
-    private isReady: boolean;
     private length: number;
     private data: string;
 
@@ -14,7 +13,6 @@ export class ByteStream {
      */
     constructor() {
         this.index = 0;
-        this.isReady = false;
         this.length = 0;
         this.data = '';
     }
