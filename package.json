@@ -1,1 +1,15 @@
-{"name": "theorajs", "version": "0.1"}
+{
+    "name": "theorajs",
+    "version": "0.0.0-dev",
+    "description": "Ogg/Theora decoder in JavaScript",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lo1tuma/theorajs.git"
+    },
+    "author": "Mathias Schreck <schreck.mathias@gmail.com>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/lo1tuma/theorajs/issues"
+    },
+    "homepage": "https://github.com/lo1tuma/theorajs#readme"
+}
