@@ -45,7 +45,7 @@ export class Packet {
          * @return {Number}
          */
     next8() {
-        const val = this.data[this.offset];
+        const val = this.get8(this.offset);
         this.offset += 1;
         return val;
     }
