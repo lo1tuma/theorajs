@@ -1,8 +1,4 @@
-TheoraJS.namespace('Ogg').Page = (function() {
-    'use strict';
-
-    let Constructor;
-
+export class Page {
     /**
      * Represents a single ogg page.
      *
@@ -11,7 +7,7 @@ TheoraJS.namespace('Ogg').Page = (function() {
      * @constructor
      * @param {Stream.ByteStream} stream
      */
-    Constructor = function(stream) {
+    constructor(stream) {
         let i;
 
         this.stream = stream;
@@ -137,55 +133,48 @@ TheoraJS.namespace('Ogg').Page = (function() {
         for (i = 0; i < this.pageSegments; i += 1) {
             this.segments.push(this.stream.nextArray(this.segmentTable[i]));
         }
-    };
+    }
 
-    Constructor.prototype = {
-        // Reset constructor reference
-        constructor: TheoraJS.Ogg.Page,
-
-        /**
+    /**
          * Checks if the page has a valid capturePattern.
          *
          * @method isValid
          * @return {Boolean}
          */
-        isValid() {
-            return this.capturePattern === 'OggS';
-        },
+    isValid() {
+        return this.capturePattern === 'OggS';
+    }
 
-        /**
+    /**
          * Checks if the page is a continued page or the first page within a logical stream.
          *
          * @method isContinuedPage
          * @return {Boolean}
          */
-        isContinuedPage() {
-            // Check bit flag
-            return (this.headerType & 0x01) === 0x01;
-        },
+    isContinuedPage() {
+        // Check bit flag
+        return (this.headerType & 0x01) === 0x01;
+    }
 
-        /**
+    /**
          * Checks if the page is the last page within a logical stream.
          *
          * @method isEndOfStream
          * @return {Boolean}
          */
-        isEndOfStream() {
-            // Check bit flag
-            return (this.headerType & 0x04) === 0x04;
-        },
+    isEndOfStream() {
+        // Check bit flag
+        return (this.headerType & 0x04) === 0x04;
+    }
 
-        /**
+    /**
          * Checks if the page is the first page within a logical stream.
          *
          * @method isBeginOfStream
          * @return {Boolean}
          */
-        isBeginOfStream() {
-            // Check bit flag
-            return (this.headerType & 0x02) === 0x02;
-        }
-    };
-
-    return Constructor;
-})();
+    isBeginOfStream() {
+        // Check bit flag
+        return (this.headerType & 0x02) === 0x02;
+    }
+}

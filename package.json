@@ -16,6 +16,12 @@
         "LICENSE"
     ],
     "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "1.6.0",
+        "@typescript-eslint/parser": "1.6.0",
+        "eslint": "6.0.0-alpha.0",
+        "eslint-config-xo-typescript": "0.9.0",
+        "eslint-import-resolver-node": "0.3.2",
+        "typescript": "3.4.4",
         "xo": "0.24.0"
     },
     "scripts": {
@@ -24,12 +30,31 @@
     },
     "xo": {
         "space": 4,
-        "envs": [ "node" ],
-        "prettier": true,
-        "nodeVersion": "11"
-
-    },
-    "prettier": {
-        "bracketSpacing": true
+        "envs": [
+            "node"
+        ],
+        "prettier": false,
+        "nodeVersion": "11",
+        "extends": "xo-typescript",
+        "extensions": [
+            "js",
+            "ts"
+        ],
+        "rules": {
+            "@typescript-eslint/indent": [
+                "error",
+                4,
+                {
+                    "SwitchCase": 0
+                }
+            ],
+            "unicorn/filename-case": [
+                "error",
+                {
+                    "case": "camelCase"
+                }
+            ],
+            "object-curly-spacing": [ "error", "always" ]
+        }
     }
 }

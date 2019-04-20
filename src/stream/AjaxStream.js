@@ -1,32 +1,25 @@
-TheoraJS.namespace('Stream').AjaxStream = (function() {
-    'use strict';
+import { ByteStream } from './byteStream';
 
-    // Dependencies
-    const byteStream = TheoraJS.namespace('Stream').ByteStream;
+const fetch = function (url, callback) {
+    // To-do: ajax: cross browser compatibility
+    const req = new XMLHttpRequest();
 
-    // Private variables
-    let Constructor;
+    // XHR binary charset
+    req.overrideMimeType('text/plain; charset=x-user-defined');
+    req.open('GET', url, true);
 
-    // Private methods
-    const fetch = function(url, callback) {
-        // To-do: ajax: cross browser compatibility
-        const req = new XMLHttpRequest();
-
-        // XHR binary charset
-        req.overrideMimeType('text/plain; charset=x-user-defined');
-        req.open('GET', url, true);
-
-        req.onreadystatechange = function() {
-            if (req.readyState === 4) {
-                if (typeof callback === 'function') {
-                    callback(req.responseText);
-                }
+    req.onreadystatechange = function () {
+        if (req.readyState === 4) {
+            if (typeof callback === 'function') {
+                callback(req.responseText);
             }
-        };
-
-        req.send(null);
+        }
     };
 
+    req.send(null);
+};
+
+export class AjaxStream extends ByteStream {
     /**
      * Load a remote binary file using ajax.
      *
@@ -36,18 +29,11 @@ TheoraJS.namespace('Stream').AjaxStream = (function() {
      * @constructor
      * @extends ByteStream
      */
-    Constructor = function(url) {
+    constructor(url) {
+        super();
         // To-do: read data chunk-wise
         this.url = url;
-        // Call super constructor
-        Constructor.uber.constructor.call(this);
-    };
-
-    // Inheritance
-    TheoraJS.inherit(Constructor, byteStream);
-
-    // Reset constructor reference
-    Constructor.prototype.constructor = TheoraJS.namespace('Stream').AjaxStream;
+    }
 
     /**
      * Fetch
@@ -55,13 +41,11 @@ TheoraJS.namespace('Stream').AjaxStream = (function() {
      * @method fetch
      * @param {Function} callback
      */
-    Constructor.prototype.fetch = function(callback) {
+    fetch(callback) {
         const self = this;
         fetch(this.url, data => {
             self.setData(data);
             callback();
         });
-    };
-
-    return Constructor;
-})();
+    }
+}

@@ -1,8 +1,4 @@
-TheoraJS.namespace('Ogg').Packet = (function() {
-    'use strict';
-
-    let Constructor;
-
+export class Packet {
     /**
      * Represents a logical ogg packet.
      *
@@ -10,113 +6,106 @@ TheoraJS.namespace('Ogg').Packet = (function() {
      * @namespace Ogg
      * @constructor
      */
-    Constructor = function() {
+    constructor() {
         this.data = [];
         this.offset = 0;
-    };
+    }
 
-    Constructor.prototype = {
-        // Reset constructor reference
-        constructor: TheoraJS.namespace('Ogg').Packet,
-
-        /**
+    /**
          * Adds a segment.
          *
          * @method addSegment
          * @param {Array} segment Data array of the segment
          */
-        addSegment(segment) {
-            if (segment.length === 0) {
-                // Don't add zero length segments
-                return;
-            }
+    addSegment(segment) {
+        if (segment.length === 0) {
+            // Don't add zero length segments
+            return;
+        }
 
-            this.data = this.data.concat(segment);
-        },
+        this.data = this.data.concat(segment);
+    }
 
-        /**
+    /**
          * Get the length of the packet
          *
          * @method getLength
          * @return {Number}
          */
-        getLength() {
-            return this.data.length;
-        },
+    getLength() {
+        return this.data.length;
+    }
 
-        /**
+    /**
          * Gets next 8-bit value.
          *
          * @method next8
          * @return {Number}
          */
-        next8() {
-            const val = this.data[this.offset];
-            this.offset += 1;
-            return val;
-        },
+    next8() {
+        const val = this.data[this.offset];
+        this.offset += 1;
+        return val;
+    }
 
-        /**
+    /**
          * Gets next 16-bit value.
          *
          * @method next16
          * @return {Number}
          */
-        next16() {
-            return (this.next8() << 8) | this.next8();
-        },
+    next16() {
+        return (this.next8() << 8) | this.next8();
+    }
 
-        /**
+    /**
          * Gets next 24-bit value.
          *
          * @method next24
          * @return {Number}
          */
-        next24() {
-            return (this.next8() << 16) | this.next16();
-        },
+    next24() {
+        return (this.next8() << 16) | this.next16();
+    }
 
-        /**
+    /**
          * Gets next 32-bit value.
          *
          * @method next32
          * @return {Number}
          */
-        next32() {
-            return (this.next8() << 24) | this.next24();
-        },
+    next32() {
+        return (this.next8() << 24) | this.next24();
+    }
 
-        /**
+    /**
          * Get a 8-bit value of a specified offset.
          *
          * @method get8
          * @param {Number} i offset
          * @return {Number}
          */
-        get8(i) {
-            return this.data[i];
-        },
+    get8(i) {
+        return this.data[i];
+    }
 
-        /**
+    /**
          * Skips a specified number of bytes.
          *
          * @method skip
          * @param {Number} n Bytes to skip.
          */
-        skip(n) {
-            this.offset += n;
-        },
+    skip(n) {
+        this.offset += n;
+    }
 
-        /**
+    /**
          * Seeks to a specified position.
          *
          * @method seek
          * @param {Number} pos Position
          */
-        seek(pos) {
-            this.offset = pos;
-        }
-    };
-
-    return Constructor;
-})();
+    seek(pos) {
+        this.offset = pos;
+    }
+}

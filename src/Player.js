@@ -5,7 +5,7 @@
  * @module TheoraPlayer
  * @class TheoraPlayer
  */
-var TheoraPlayer = (function() {
+var TheoraPlayer = (function () {
     let workerPath =
         'https://raw.github.com/lo1tuma/theorajs/master/src/Worker.js';
     // Export
@@ -80,7 +80,7 @@ var TheoraPlayer = (function() {
      * @param {String} Element id
      * elemid
      */
-    Constructor = function(url, elemId, wPath, onStart, onStop) {
+    Constructor = function (url, elemId, wPath, onStart, onStop) {
         const self = this;
         workerPath = wPath;
         this.canvas = document.createElement('canvas');

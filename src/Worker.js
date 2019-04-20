@@ -14,7 +14,7 @@ let running = false;
 let divy = 1;
 let divx = 1;
 
-onmessage = function(event) {
+onmessage = function (event) {
     const msg = event.data;
 
     if (msg.type !== 'command') {

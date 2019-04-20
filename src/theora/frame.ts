@@ -1,13 +1,5 @@
-TheoraJS.namespace('Theora').Frame = (function() {
-    'use strict';
-
-    /* Dependencies */
-    const { util } = TheoraJS.namespace('Theora');
-    const { constants } = TheoraJS.namespace('Theora');
-    const { header } = TheoraJS.namespace('Theora');
-
-    /* Private */
-
+import * as util from './util';
+import * as constants from './constants';
     // Mapping tables
     let tables;
 
@@ -16,6 +8,8 @@ TheoraJS.namespace('Theora').Frame = (function() {
 
     /* Export */
     let Constructor;
+
+export class Frame {
 
     /**
      * A theora frame, which are to be decoded from an input ogg packet.
@@ -28,7 +22,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
      * @param {Theora.Frame} [goldReferenceFrame]
      * @param {Theora.Frame} [prefReferenceFrame]
      */
-    Constructor = function(packet, goldReferenceFrame, prefReferenceFrame) {
+    constructor(packet. goldReferenceFrame, prefReferenceFrame) {
         this.packet = packet;
 
         // Init bitwise packet reader
@@ -72,7 +66,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
          * @type {Array}
          */
         this.changedPixels = [];
-    };
+    }
 
     /**
      * Sets the mapping tables for all frames.
@@ -81,16 +75,12 @@ TheoraJS.namespace('Theora').Frame = (function() {
      * @static
      * @param {Object} mTables
      */
-    Constructor.setMappingTables = function(mTables) {
+    static setMappingTables(mTables) {
         tables = mTables;
 
         // Offsets for all color planes
         colorPlaneOffsets = [0, header.nlbs, header.nlbs + header.ncbs];
-    };
-
-    Constructor.prototype = {
-        // Reset constructor reference
-        constructor: TheoraJS.namespace('Theora').Frame,
+    }
 
         /**
          * Decodes and reconstructs the complete frame.
@@ -150,7 +140,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
 
             // Apply the loop filter for the reconstructed frame
             this.filterLoopComplete();
-        },
+        }
 
         /**
          * Decodes the frame header
@@ -221,7 +211,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     };
                 }
             }
-        },
+        }
 
         /**
          * Decodes run-length encoded bit strings.
@@ -299,7 +289,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     bit = 1 - bit;
                 }
             }
-        },
+        }
 
         /**
          * This procedure determines which blocks are coded in a given frame.
@@ -425,7 +415,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     }
                 }
             }
-        },
+        }
 
         /**
          * Decodes macro block conding modes
@@ -507,7 +497,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     this.mbmodes[mbi] = this.mbmodes[mbi] || 0;
                 }
             }
-        },
+        }
 
         /**
          * Reads a bit at a time until a huffman code is found in a given map.
@@ -530,7 +520,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             } while (map[0][bits][key] === undefined);
 
             return map[0][bits][key];
-        },
+        }
 
         /**
          * Reads a bit at a time until a huffman code is found in a given map.
@@ -553,7 +543,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             } while (!map[bits].hasOwnProperty(key));
 
             return map[bits][key];
-        },
+        }
 
         /**
          * Decodes a single motion vector.
@@ -597,7 +587,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             }
 
             return [mvx, mvy];
-        },
+        }
 
         /**
          * Decodes the motion vectors for all macro blocks.
@@ -774,8 +764,8 @@ TheoraJS.namespace('Theora').Frame = (function() {
                             this.mvects[h] = mVector;
                             break;
                         default:
-                            // 4:4:4
-                            // lower-left of cb plane
+                        // 4:4:4
+                        // lower-left of cb plane
                             e = blocksOfMacroBlock[4];
                             // Lower-right of cb plane
                             f = blocksOfMacroBlock[5];
@@ -853,7 +843,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     }
                 }
             }
-        },
+        }
 
         /**
          * This procedure selects the qi value to be used for dequantizing the
@@ -910,7 +900,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     }
                 }
             }
-        },
+        }
 
         /**
          * Decodes an EOB token.
@@ -955,12 +945,12 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     eobs = this.reader.nextBits(4) + 16;
                     break;
                 default:
-                    // Token will be 6
+                // Token will be 6
                     eobs = this.reader.nextBits(12);
 
                     if (eobs === 0) {
-                        // Assign EOBS to be the number of coded blocks bj
-                        // such that TIS[bj ] is less than 64
+                    // Assign EOBS to be the number of coded blocks bj
+                    // such that TIS[bj ] is less than 64
                         bj = 0;
                         for (i = 0; i < this.codedBlocks.length; i += 1) {
                             if (tis[bj] < 64) {
@@ -985,7 +975,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             eobs -= 1;
 
             return eobs;
-        },
+        }
 
         /**
          * Decodes one or more coefficients in the current block for a specific token.
@@ -1317,7 +1307,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                             'Unable to decode stream: invalid frame packet.'
                     };
             }
-        },
+        }
 
         /**
          * Decodes all DCT coefficients.
@@ -1439,7 +1429,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     }
                 }
             }
-        },
+        }
 
         /**
          * This procedure outlines how a predictor is formed for a single block.
@@ -1635,7 +1625,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             }
 
             return dcpred;
-        },
+        }
 
         /**
          * This procedure inverts the DC prediction to recover the original DC values.
@@ -1705,7 +1695,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     }
                 }
             }
-        },
+        }
 
         /**
          * The whole pixel predictor simply copies verbatim the contents of the
@@ -1789,7 +1779,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             }
 
             return pred;
-        },
+        }
 
         /**
          * The half-pixel predictor converts the fractional motion vector into two whole-pixel motion vectors
@@ -1881,7 +1871,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             }
 
             return pred;
-        },
+        }
 
         /**
          * This procedure takes the quantized DCT coefficient values in zig-zag order
@@ -1957,7 +1947,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             }
 
             return dqc;
-        },
+        }
 
         /**
          * Seperated 1D inverse DCT.
@@ -2138,7 +2128,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             x[7] = r;
 
             return x;
-        },
+        }
 
         /**
          * The 2D inverse DCT procedure applies 16 times the 1D inverse DCT procedure.
@@ -2245,7 +2235,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     recp[py][px] = p;
                 }
             }
-        },
+        }
 
         /**
          *
@@ -2295,7 +2285,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     recp[py][px] = p;
                 }
             }
-        },
+        }
 
         /**
          * This procedure takes all decoded data from the input packet and reconstruct the whole frame.
@@ -2536,7 +2526,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
                     this.setPixels2(recp, pli, by, bx, pred, res);
                 }
             }
-        },
+        }
 
         /**
          * Filter response is modulation.
@@ -2564,7 +2554,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
             }
 
             return -r + pl2;
-        },
+        }
 
         /**
          * This procedure applies a 4-tap horizontal filter to each row of a vertical block edge.
@@ -2694,7 +2684,7 @@ TheoraJS.namespace('Theora').Frame = (function() {
 
                 recp[fy2][px] = p;
             }
-        },
+        }
 
         /**
          * This procedure defines the order that the various block edges are filtered.
@@ -2808,8 +2798,4 @@ TheoraJS.namespace('Theora').Frame = (function() {
                 }
             }
         }
-    };
-
-    // Export
-    return Constructor;
-})();
+    }

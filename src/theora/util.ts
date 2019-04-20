@@ -1,14 +1,3 @@
-/**
- * Collection of some helper functions.
- *
- * @submodule util
- * @class util
- * @namespace Theora
- * @static
- */
-TheoraJS.namespace('Theora').util = (function() {
-    'use strict';
-
     let Bitstream;
     let yCbCrToRGB;
 
@@ -21,7 +10,7 @@ TheoraJS.namespace('Theora').util = (function() {
      * @param {Number} cr
      * @return {Array} r, g, b
      */
-    yCbCrToRGB = (function() {
+    export const yCbCrToRGB = (function () {
         const rgbCache = [];
         const yOutCache = [];
         const pCache = [];
@@ -38,7 +27,7 @@ TheoraJS.namespace('Theora').util = (function() {
             }
         }
 
-        return function(y, cb, cr) {
+        return function (y, cb, cr) {
             const yOut = yOutCache[y];
             const pb = pCache[cb];
             const pr = pCache[cr];
@@ -90,7 +79,7 @@ TheoraJS.namespace('Theora').util = (function() {
      * @param {Number} val
      * @return {Number} -1 or 1
      */
-    function sign(val) {
+    export function sign(val) {
         return val < 0 ? -1 : 1;
     }
 
@@ -101,7 +90,7 @@ TheoraJS.namespace('Theora').util = (function() {
      * @param {Number} val
      * @return {Number}
      */
-    function toInt(val) {
+    export function toInt(val) {
         return val | 0;
     }
 
@@ -112,7 +101,7 @@ TheoraJS.namespace('Theora').util = (function() {
      * @param {Number} val
      * @return {Number}
      */
-    function toUInt(val) {
+    export function toUInt(val) {
         return Math.abs(val | 0);
     }
 
@@ -123,7 +112,7 @@ TheoraJS.namespace('Theora').util = (function() {
      * @param {Number} val
      * @return {Number}
      */
-    function toShort(val) {
+    export function toShort(val) {
         if (val >= 32768) {
             return 32768;
         }
@@ -142,7 +131,7 @@ TheoraJS.namespace('Theora').util = (function() {
      * @param {Number} val
      * @return {Number}
      */
-    function ilog(val) {
+    export function ilog(val) {
         let ret = 0;
 
         while (val !== 0) {
@@ -160,7 +149,7 @@ TheoraJS.namespace('Theora').util = (function() {
      * @param {Array} a
      * @return {Array}
      */
-    function arrayFlip(a) {
+    export function arrayFlip(a) {
         let key;
         const b = [];
 
@@ -173,33 +162,32 @@ TheoraJS.namespace('Theora').util = (function() {
         return b;
     }
 
-    /**
-     * Bitstream reader class for bit unpacking.
-     * Reads a ogg packet bitwise.
-     *
-     * @class Bitstream
-     * @namespace Theora.Util
-     * @constructor
-     * @param {Ogg.Packet} packet
-     * @param {Number} offset Bytes to skip
-     */
-    Bitstream = function(packet, offset) {
-        this.packet = packet;
-        this.packet.seek(offset);
 
-        // Number of bits already read
-        this.bits = 0;
+    export class Bitstream {
+        /**
+         * Bitstream reader class for bit unpacking.
+         * Reads a ogg packet bitwise.
+         *
+         * @class Bitstream
+         * @namespace Theora.Util
+         * @constructor
+         * @param {Ogg.Packet} packet
+         * @param {Number} offset Bytes to skip
+         */
+        constructor(packet, offset) {
+            this.packet = packet;
+            this.packet.seek(offset);
 
-        // 16-bit lookup buffer
-        this.lookup = packet.next16();
+            // Number of bits already read
+            this.bits = 0;
 
-        // End of stream flag
-        this.eos = false;
-    };
+            // 16-bit lookup buffer
+            this.lookup = packet.next16();
 
-    Bitstream.prototype = {
-        // Reset constructor reference
-        constructor: Bitstream,
+            // End of stream flag
+            this.eos = false;
+        }
+
 
         /**
          * Reads n bits.
@@ -243,7 +231,7 @@ TheoraJS.namespace('Theora').util = (function() {
                 name: 'TheoraError',
                 message: 'Bitstream can only read 0-32 bits at one time.'
             };
-        },
+        }
 
         /**
          * Reads n bits and returns an unsigned value.
@@ -254,7 +242,7 @@ TheoraJS.namespace('Theora').util = (function() {
          */
         nextUBits(n) {
             return Math.abs(this.nextBits(n));
-        },
+        }
 
         /**
          * Reads n bits and update the lookup buffer.
@@ -313,21 +301,7 @@ TheoraJS.namespace('Theora').util = (function() {
             // Set all bits above the 16th to zero,
             // this is necessary because js is a typeless language.
             // Bit operations are executed in a 32-bit context
-            this.lookup &= 0xffff;
+            this.lookup &= 0xFFFF;
 
             return val;
         }
-    };
-
-    // Export public members and methods
-    return {
-        Bitstream,
-        toInt,
-        toUInt,
-        toShort,
-        ilog,
-        arrayFlip,
-        sign,
-        yCbCrToRGB
-    };
-})();

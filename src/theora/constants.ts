@@ -1,8 +1,5 @@
-TheoraJS.namespace('Theora').constants = (function() {
-    'use strict';
 
-    return {
-        LONG_RUN_LENGTH_HUFFMAN_TABLE: [
+        export const LONG_RUN_LENGTH_HUFFMAN_TABLE = [
             // Huffman codes
             [
                 // 1 bit
@@ -26,9 +23,9 @@ TheoraJS.namespace('Theora').constants = (function() {
 
             // Offsets
             [0, 2, 6, 14, 30, 62]
-        ],
+        ];
 
-        SHORT_RUN_LENGTH_HUFFMAN_TABLE: [
+        export const SHORT_RUN_LENGTH_HUFFMAN_TABLE = [
             // Huffman codes
             [
                 // 1 bit
@@ -49,9 +46,9 @@ TheoraJS.namespace('Theora').constants = (function() {
 
             // Offsets
             [0, 2, 6, 14, 30]
-        ],
+        ];
 
-        MACRO_BLOCK_MODE_SCHEMES: [
+        export const MACRO_BLOCK_MODE_SCHEMES = [
             // No scheme for index 0
             null,
 
@@ -72,9 +69,9 @@ TheoraJS.namespace('Theora').constants = (function() {
 
             // Scheme 6
             [0, 5, 3, 4, 2, 1, 6, 7]
-        ],
+        ];
 
-        MACRO_BLOCK_MODE_SCHEMES_HUFFMAN_TABLE: [
+        export const MACRO_BLOCK_MODE_SCHEMES_HUFFMAN_TABLE = [
             // Huffman codes
             [
                 // 1 bits
@@ -101,9 +98,9 @@ TheoraJS.namespace('Theora').constants = (function() {
 
             // Offsets
             [0, 2, 6, 14, 30, 62, 126, 254]
-        ],
+        ];
 
-        MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE: [
+        export const MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE = [
             // Huffman codes
             [
                 // 1 bits
@@ -183,9 +180,9 @@ TheoraJS.namespace('Theora').constants = (function() {
 
             // Offsets
             [0, 0, 0, 6, 0, 40, 96, 224]
-        ],
+        ];
 
-        HUFFMAN_TABLE_GROUPS: [
+        export const HUFFMAN_TABLE_GROUPS = [
             0,
             1,
             1,
@@ -250,10 +247,10 @@ TheoraJS.namespace('Theora').constants = (function() {
             4,
             4,
             4
-        ],
+        ];
 
         // Reference frame index for each conding mode
-        REFERENCE_FRAME_INDICIES: [
+        export const REFERENCE_FRAME_INDICIES = [
             // INTER_NOMV mode => Previous frame reference
             1,
 
@@ -277,27 +274,27 @@ TheoraJS.namespace('Theora').constants = (function() {
 
             // INTER_MV_FOUR mode => previous frame reference
             1
-        ],
+        ];
 
-        DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE: {
-            '1000': { weights: [1, 0, 0, 0], divisor: 1 },
+        export const DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE = [
+            1000: { weights: [1, 0, 0, 0], divisor: 1 },
             '0100': { weights: [0, 1, 0, 0], divisor: 1 },
-            '1100': { weights: [1, 0, 0, 0], divisor: 1 },
+            1100: { weights: [1, 0, 0, 0], divisor: 1 },
             '0010': { weights: [0, 0, 1, 0], divisor: 1 },
-            '1010': { weights: [1, 0, 1, 0], divisor: 2 },
+            1010: { weights: [1, 0, 1, 0], divisor: 2 },
             '0110': { weights: [0, 0, 1, 0], divisor: 1 },
-            '1110': { weights: [29, -26, 29, 0], divisor: 32 },
+            1110: { weights: [29, -26, 29, 0], divisor: 32 },
             '0001': { weights: [0, 0, 0, 1], divisor: 1 },
-            '1001': { weights: [75, 0, 0, 53], divisor: 128 },
+            1001: { weights: [75, 0, 0, 53], divisor: 128 },
             '0101': { weights: [0, 1, 0, 1], divisor: 2 },
-            '1101': { weights: [75, 0, 0, 53], divisor: 128 },
+            1101: { weights: [75, 0, 0, 53], divisor: 128 },
             '0011': { weights: [0, 0, 1, 0], divisor: 1 },
-            '1011': { weights: [75, 0, 0, 53], divisor: 128 },
+            1011: { weights: [75, 0, 0, 53], divisor: 128 },
             '0111': { weights: [0, 3, 10, 3], divisor: 16 },
-            '1111': { weights: [29, -26, 29, 0], divisor: 32 }
-        },
+            1111: { weights: [29, -26, 29, 0], divisor: 32 }
+        };
 
-        ZIG_ZAG_ORDER_MAPPING_TABLE: [
+        export const ZIG_ZAG_ORDER_MAPPING_TABLE = [
             [0, 1, 5, 6, 14, 15, 27, 28],
             [2, 4, 7, 13, 16, 26, 29, 42],
             [3, 8, 12, 17, 25, 30, 41, 43],
@@ -306,10 +303,10 @@ TheoraJS.namespace('Theora').constants = (function() {
             [20, 22, 33, 38, 46, 51, 55, 60],
             [21, 34, 37, 47, 50, 56, 59, 61],
             [35, 36, 48, 49, 57, 58, 62, 63]
-        ],
+        ];
 
         // Mapping table of the relative row position within a super block
-        ROW_MAPPING_TABLE: [
+        export const ROW_MAPPING_TABLE = [
             [
                 // 1*1
                 [0],
@@ -362,9 +359,9 @@ TheoraJS.namespace('Theora').constants = (function() {
                 // 4*4
                 [0, 0, 1, 1, 2, 3, 3, 2, 2, 3, 3, 2, 1, 1, 0, 0]
             ]
-        ],
+        ];
 
-        COLUMN_MAPPING_TABLE: [
+        export const COLUMN_MAPPING_TABLE = [
             [
                 // 1*1
                 [0],
@@ -417,14 +414,14 @@ TheoraJS.namespace('Theora').constants = (function() {
                 // 4*4
                 [0, 1, 1, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 2, 2, 3]
             ]
-        ],
+        ];
 
         // Approximations of Sines and Cosines
-        COSINES: [64277, 60547, 54491, 46341, 36410, 25080, 12785],
-        SINES: [12785, 25080, 36410, 46341, 54491, 60547, 64277],
+        export const COSINES: [64277, 60547, 54491, 46341, 36410, 25080, 12785];
+        export const SINES: [12785, 25080, 36410, 46341, 54491, 60547, 64277];
 
         // Intra Predictor
-        INTRA_PREDICTOR: [
+        export const INTRA_PREDICTOR = [
             [128, 128, 128, 128, 128, 128, 128, 128],
             [128, 128, 128, 128, 128, 128, 128, 128],
             [128, 128, 128, 128, 128, 128, 128, 128],
@@ -433,6 +430,4 @@ TheoraJS.namespace('Theora').constants = (function() {
             [128, 128, 128, 128, 128, 128, 128, 128],
             [128, 128, 128, 128, 128, 128, 128, 128],
             [128, 128, 128, 128, 128, 128, 128, 128]
-        ]
-    };
-})();
+        ];
