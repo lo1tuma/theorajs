@@ -1,6 +1,6 @@
 import { ByteStream } from './byteStream';
 
-const fetch = function (url, callback) {
+const fetch = function (url: string, callback: Function) {
     // To-do: ajax: cross browser compatibility
     const req = new XMLHttpRequest();
 
@@ -20,6 +20,8 @@ const fetch = function (url, callback) {
 };
 
 export class AjaxStream extends ByteStream {
+    private url: string;
+
     /**
      * Load a remote binary file using ajax.
      *
@@ -29,7 +31,7 @@ export class AjaxStream extends ByteStream {
      * @constructor
      * @extends ByteStream
      */
-    constructor(url) {
+    constructor(url: string) {
         super();
         // To-do: read data chunk-wise
         this.url = url;
@@ -41,9 +43,9 @@ export class AjaxStream extends ByteStream {
      * @method fetch
      * @param {Function} callback
      */
-    fetch(callback) {
+    fetch(callback: Function) {
         const self = this;
-        fetch(this.url, data => {
+        fetch(this.url, (data: string) => {
             self.setData(data);
             callback();
         });

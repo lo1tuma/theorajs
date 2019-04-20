@@ -1,6 +1,15 @@
 import { Packet } from './packet';
+import { TransportStream } from './transportStream';
+import { Page } from './page';
 
 export class LogicalStream {
+    private stream: TransportStream;
+    private serialNumber: number;
+    private currentPage: Page;
+    private segmentOffset: number;
+    private initialPacket: false | Packet;
+    private lastPageNumber: number;
+
     /**
      * The logical stream is a specific demultiplexed stream of an ogg container.
      *
@@ -10,7 +19,7 @@ export class LogicalStream {
      * @param {Ogg.TransportStream} transportStream
      * @param {Ogg.Page} firstPage
      */
-    constructor(transportStream, firstPage) {
+    constructor(transportStream: TransportStream, firstPage: Page) {
         if (!firstPage.isBeginOfStream()) {
             throw {
                 name: 'OggError',
@@ -47,7 +56,7 @@ export class LogicalStream {
      */
     nextPacket() {
         const packet = new Packet();
-        let segment;
+        let segment: false | ReadonlyArray<number>;
 
         segment = this.nextSegment();
         if (!segment) {
@@ -82,7 +91,7 @@ export class LogicalStream {
      *	set to the page, in case of a page spanning packet.
      * @return {Array}
      */
-    nextSegment(checkForContinuation) {
+    nextSegment(checkForContinuation?: boolean): false | ReadonlyArray<number> {
         let ret;
         let segment;
 

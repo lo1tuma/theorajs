@@ -1,4 +1,11 @@
+import { ByteStream } from '../stream/byteStream';
+import { LogicalStream } from './logicalStream';
+import { Page } from './page';
+
 export class TransportStream {
+    private byteStream: ByteStream;
+    private logicalStreams: LogicalStream[];
+
     /**
      * The transport stream is the multiplexed physical stream of an ogg container.
      *
@@ -7,8 +14,9 @@ export class TransportStream {
      * @constructor
      * @param {Stream.ByteStream} stream
      */
-    constructor(stream) {
+    constructor(stream: ByteStream) {
         this.byteStream = stream;
+        this.logicalStreams = [];
     }
 
     /**
@@ -21,7 +29,6 @@ export class TransportStream {
          */
     findLogicalStreams() {
         let page;
-        this.logicalStreams = [];
 
         // Lookup for all logical streams
         // a logical stream is identified by a ogg page where the BeginOfStream flag is true
@@ -37,7 +44,7 @@ export class TransportStream {
 
         // Override this method, because we have to do this work only once
         // to-do: check, if works... ?!
-        Constructor.prototype.findLogicalStreams = function () {
+        TransportStream.prototype.findLogicalStreams = function () {
             return this.logicalStreams;
         };
 

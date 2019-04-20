@@ -1,4 +1,6 @@
 export class Packet {
+    private data: ReadonlyArray<number>;
+    private offset: number;
     /**
      * Represents a logical ogg packet.
      *
@@ -17,7 +19,7 @@ export class Packet {
          * @method addSegment
          * @param {Array} segment Data array of the segment
          */
-    addSegment(segment) {
+    addSegment(segment: ReadonlyArray<number>) {
         if (segment.length === 0) {
             // Don't add zero length segments
             return;
@@ -85,7 +87,7 @@ export class Packet {
          * @param {Number} i offset
          * @return {Number}
          */
-    get8(i) {
+    get8(i: number) {
         return this.data[i];
     }
 
@@ -95,7 +97,7 @@ export class Packet {
          * @method skip
          * @param {Number} n Bytes to skip.
          */
-    skip(n) {
+    skip(n: number) {
         this.offset += n;
     }
 
@@ -105,7 +107,7 @@ export class Packet {
          * @method seek
          * @param {Number} pos Position
          */
-    seek(pos) {
+    seek(pos: number) {
         this.offset = pos;
     }
 }

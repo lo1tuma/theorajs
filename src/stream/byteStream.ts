@@ -1,4 +1,9 @@
 export class ByteStream {
+    private index: number;
+    private isReady: boolean;
+    private length: number;
+    private data: string;
+
     /**
      * ByteStream
      *
@@ -11,6 +16,7 @@ export class ByteStream {
         this.index = 0;
         this.isReady = false;
         this.length = 0;
+        this.data = '';
     }
 
     /**
@@ -19,7 +25,7 @@ export class ByteStream {
          * @method setData
          * @param {String} data
          */
-    setData(data) {
+    setData(data: string) {
         this.data = data;
         this.length = data.length;
     }
@@ -44,7 +50,7 @@ export class ByteStream {
          * @param {Boolean} [littleEndian=false] Defines the byte-order
          * @return {Number}
          */
-    next16(littleEndian) {
+    next16(littleEndian: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
 
@@ -62,7 +68,7 @@ export class ByteStream {
          * @param {Boolean} [littleEndian=false] Defines the byte-order
          * @return {Number}
          */
-    next24(littleEndian) {
+    next24(littleEndian: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
@@ -81,7 +87,7 @@ export class ByteStream {
          * @param {Boolean} [littleEndian=false] Defines the byte-order
          * @return {Number}
          */
-    next32(littleEndian) {
+    next32(littleEndian: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
@@ -103,7 +109,7 @@ export class ByteStream {
          * @param {Boolean} [littleEndian=false] Defines the byte-order
          * @return {Object}
          */
-    next64(littleEndian) {
+    next64(littleEndian: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
@@ -134,7 +140,7 @@ export class ByteStream {
          * @param {Number} n Numer of values
          * @return {Array}
          */
-    nextArray(n) {
+    nextArray(n: number): number[] {
         const bytes = [];
         let i;
 
@@ -156,7 +162,7 @@ export class ByteStream {
          * @method skip
          * @param {Number} n Number of values.
          */
-    skip(n) {
+    skip(n: number) {
         this.index += n;
     }
 }

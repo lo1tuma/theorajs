@@ -1,13 +1,21 @@
+import { ByteStream } from '../stream/byteStream';
+
 export class Page {
-    /**
-     * Represents a single ogg page.
-     *
-     * @class Page
-     * @namespace Ogg
-     * @constructor
-     * @param {Stream.ByteStream} stream
-     */
-    constructor(stream) {
+    private stream: ByteStream;
+    private capturePattern: string;
+    private version: number;
+    private headerType: number;
+    private granulePosition: { lowBits: number, highBits: number };
+    public serialNumber: number;
+    public pageSequenceNumber: number;
+    private checksum: number;
+    public pageSegments: number;
+    private segmentTable: Array<number>;
+    public segments: Array<Array<number>>;
+    public headerLength: number;
+    public bodyLength: number;
+
+    constructor(stream: ByteStream) {
         let i;
 
         this.stream = stream;
