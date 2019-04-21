@@ -4,7 +4,7 @@ import { Page } from './page';
 
 export class LogicalStream {
     private stream: TransportStream;
-    private serialNumber: number;
+    public serialNumber: number;
     private currentPage: Page;
     private segmentOffset: number;
     private initialPacket: false | Packet;
