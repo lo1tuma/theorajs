@@ -4,6 +4,7 @@ import { Page } from './page';
 
 export class TransportStream {
     private byteStream: ByteStream;
+
     private logicalStreams: LogicalStream[];
 
     /**
@@ -20,13 +21,13 @@ export class TransportStream {
     }
 
     /**
-         * Lookup for all logical ogg streams.
-         *
-         * Note: This method uses a lazy function definition, so avoid references to this method.
-         *
-         * @method findLogicalStreams
-         * @return {Array} Array of all LogicalStream instances.
-         */
+     * Lookup for all logical ogg streams.
+     *
+     * Note: This method uses a lazy function definition, so avoid references to this method.
+     *
+     * @method findLogicalStreams
+     * @return {Array} Array of all LogicalStream instances.
+     */
     findLogicalStreams() {
         let page;
 
@@ -44,7 +45,7 @@ export class TransportStream {
 
         // Override this method, because we have to do this work only once
         // to-do: check, if works... ?!
-        TransportStream.prototype.findLogicalStreams = function () {
+        TransportStream.prototype.findLogicalStreams = function() {
             return this.logicalStreams;
         };
 
@@ -52,11 +53,11 @@ export class TransportStream {
     }
 
     /**
-         * Get the next page in the transport stream.
-         *
-         * @method nextPage
-         * @return {Ogg.Page}
-         */
+     * Get the next page in the transport stream.
+     *
+     * @method nextPage
+     * @return {Ogg.Page}
+     */
     nextPage() {
         // To-do: check if there are more pages available
         return new Page(this.byteStream);

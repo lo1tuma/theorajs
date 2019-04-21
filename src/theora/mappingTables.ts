@@ -1,13 +1,13 @@
 import { ROW_MAPPING_TABLE, COLUMN_MAPPING_TABLE } from './constants';
 
 /**
-     * Generates a array of the sizes of all super blocks for a specific color plane.
-     *
-     * @method computeSuperBlockSizes
-     * @param {Number} width Width of the color plane in blocks.
-     * @param {Number} height Height of the color plane in blocks.
-     * @return {Array} Array of super block sizes.
-     */
+ * Generates a array of the sizes of all super blocks for a specific color plane.
+ *
+ * @method computeSuperBlockSizes
+ * @param {Number} width Width of the color plane in blocks.
+ * @param {Number} height Height of the color plane in blocks.
+ * @return {Array} Array of super block sizes.
+ */
 export function computeSuperBlockSizes(width, height) {
     // Sizes of all super blocks
     const sizes = [];
@@ -73,16 +73,16 @@ export function computeSuperBlockSizes(width, height) {
 }
 
 /**
-     * Generates a mapping table for block indicies to their super block indicies.
-     * Super block indicies can be adjusted with a offset.
-     *
-     * @method computeBlockToSuperBlockTable
-     * @param {Number} width Width of the color plane in blocks.
-     * @param {Number} height Height of the color plane in blocks.
-     * @param {Array} sizes Array of super block sizes.
-     * @param {Number} [offset=0] Offset, to adjust the super block indicies by this specific value.
-     * @return {Array} Mapping table from block index to super block index.
-     */
+ * Generates a mapping table for block indicies to their super block indicies.
+ * Super block indicies can be adjusted with a offset.
+ *
+ * @method computeBlockToSuperBlockTable
+ * @param {Number} width Width of the color plane in blocks.
+ * @param {Number} height Height of the color plane in blocks.
+ * @param {Array} sizes Array of super block sizes.
+ * @param {Number} [offset=0] Offset, to adjust the super block indicies by this specific value.
+ * @return {Array} Mapping table from block index to super block index.
+ */
 export function computeBlockToSuperBlockTable(width, height, sizes, offset) {
     // Block to super block mapping table
     const table = [];
@@ -118,23 +118,17 @@ export function computeBlockToSuperBlockTable(width, height, sizes, offset) {
 }
 
 /**
-     * Generates a mapping table for block indicies in raster order to coded order.
-     *
-     * @method computeRasterToCodedOrderMappingTable
-     * @param {Number} width Width of the color plane in blocks.
-     * @param {Number} height Height of the color plane in blocks.
-     * @param {Array} mappingTable Mapping table from block index to super block index.
-     * @param {Array} sizes Array of super block sizes.
-     * @param {Number} [offset=0] Offset, to adjust the coded block indicies by this specific value.
-     * @return {Array} Mapping table from block index in raster order to block index in coded order.
-     */
-export function computeRasterToCodedOrderMappingTable(
-    width,
-    height,
-    mappingTable,
-    sizes,
-    offset
-) {
+ * Generates a mapping table for block indicies in raster order to coded order.
+ *
+ * @method computeRasterToCodedOrderMappingTable
+ * @param {Number} width Width of the color plane in blocks.
+ * @param {Number} height Height of the color plane in blocks.
+ * @param {Array} mappingTable Mapping table from block index to super block index.
+ * @param {Array} sizes Array of super block sizes.
+ * @param {Number} [offset=0] Offset, to adjust the coded block indicies by this specific value.
+ * @return {Array} Mapping table from block index in raster order to block index in coded order.
+ */
+export function computeRasterToCodedOrderMappingTable(width, height, mappingTable, sizes, offset) {
     // Mapping table
     const table = [];
 
@@ -228,16 +222,8 @@ export function computeRasterToCodedOrderMappingTable(
 
         // Determine the absolute position of row and col
         // from the current block in the color plane
-        blockRow =
-                row +
-                constants.ROW_MAPPING_TABLE[superBlockWidth - 1][
-                    superBlockHeight - 1
-                ][relativeBi];
-        blockCol =
-                col +
-                constants.COLUMN_MAPPING_TABLE[superBlockWidth - 1][
-                    superBlockHeight - 1
-                ][relativeBi];
+        blockRow = row + constants.ROW_MAPPING_TABLE[superBlockWidth - 1][superBlockHeight - 1][relativeBi];
+        blockCol = col + constants.COLUMN_MAPPING_TABLE[superBlockWidth - 1][superBlockHeight - 1][relativeBi];
 
         // Map the raster index to coded order bi
         table[blockRow * width + blockCol] = bi + offset;
@@ -247,22 +233,17 @@ export function computeRasterToCodedOrderMappingTable(
 }
 
 /**
-     * Generates a mapping tables for block to macro block and macro block to block relations.
-     *
-     * @method computeMacroBlockMappingTables
-     * @param {Number} frameWidth Frame width in macro blocks.
-     * @param {Number} frameHeight Frame height in macro blocks.
-     * @param {Number} pixelFormat The pixel format, to determine the subsampling mode.
-     * @param {Array} rasterToCodedOrder Mapping table, that maps block indicies from raster order to coded order.
-     * @return {Array} Element 0 will be the block index to macro block index table. Element 1 will be the macro
-     *					block index to block index table.
-     */
-export function computeMacroBlockMappingTables(
-    frameWidth,
-    frameHeight,
-    pixelFormat,
-    rasterToCodedOrder
-) {
+ * Generates a mapping tables for block to macro block and macro block to block relations.
+ *
+ * @method computeMacroBlockMappingTables
+ * @param {Number} frameWidth Frame width in macro blocks.
+ * @param {Number} frameHeight Frame height in macro blocks.
+ * @param {Number} pixelFormat The pixel format, to determine the subsampling mode.
+ * @param {Array} rasterToCodedOrder Mapping table, that maps block indicies from raster order to coded order.
+ * @return {Array} Element 0 will be the block index to macro block index table. Element 1 will be the macro
+ *					block index to block index table.
+ */
+export function computeMacroBlockMappingTables(frameWidth, frameHeight, pixelFormat, rasterToCodedOrder) {
     // The mapping tables
     const tables = [];
 
@@ -362,10 +343,7 @@ export function computeMacroBlockMappingTables(
                     // if a new super block begins and 3 if we stay in the same super block.
                     // If we are in the last row, where is a parital super block
                     // we don’t have to use the coded order
-                    if (
-                        col % 2 === isOddRow &&
-                            !(row === frameHeight - 1 && isOddRow === 0)
-                    ) {
+                    if (col % 2 === isOddRow && !(row === frameHeight - 1 && isOddRow === 0)) {
                         xOffset += 3;
                     } else {
                         xOffset += 1;

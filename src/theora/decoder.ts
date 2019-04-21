@@ -9,11 +9,11 @@ let stream;
 let tables;
 
 /**
-     * Generates all mapping tables which are shared for all frames.
-     *
-     * @method computeMappingTables
-     * @private
-     */
+ * Generates all mapping tables which are shared for all frames.
+ *
+ * @method computeMappingTables
+ * @private
+ */
 function computeMappingTables() {
     let table;
     const sizes = [];
@@ -21,45 +21,18 @@ function computeMappingTables() {
 
     tables = {};
 
-    sizes[0] = mappingTables.computeSuperBlockSizes(
-        header.flbw,
-        header.flbh
-    );
-    sizes[1] = mappingTables.computeSuperBlockSizes(
-        header.fcbw,
-        header.fcbh
-    );
+    sizes[0] = mappingTables.computeSuperBlockSizes(header.flbw, header.flbh);
+    sizes[1] = mappingTables.computeSuperBlockSizes(header.fcbw, header.fcbh);
     sizes[2] = sizes[1];
     tables.superBlockSizes = sizes[0].concat(sizes[1]).concat(sizes[2]);
 
-    table = mappingTables.computeBlockToSuperBlockTable(
-        header.flbw,
-        header.flbh,
-        sizes[0],
-        offset
-    );
+    table = mappingTables.computeBlockToSuperBlockTable(header.flbw, header.flbh, sizes[0], offset);
 
     offset += sizes[0].length;
-    table.push.apply(
-        table,
-        mappingTables.computeBlockToSuperBlockTable(
-            header.fcbw,
-            header.fcbh,
-            sizes[1],
-            offset
-        )
-    );
+    table.push.apply(table, mappingTables.computeBlockToSuperBlockTable(header.fcbw, header.fcbh, sizes[1], offset));
 
     offset += sizes[1].length;
-    table.push.apply(
-        table,
-        mappingTables.computeBlockToSuperBlockTable(
-            header.fcbw,
-            header.fcbh,
-            sizes[2],
-            offset
-        )
-    );
+    table.push.apply(table, mappingTables.computeBlockToSuperBlockTable(header.fcbw, header.fcbh, sizes[2], offset));
 
     tables.biToSbi = table;
 
@@ -112,11 +85,11 @@ function computeMappingTables() {
 
 export class Decoder {
     /**
-         *
-         *
-         * @method setInputStream
-         * @param {Ogg.LogicalStream} stream Input stream.
-         */
+     *
+     *
+     * @method setInputStream
+     * @param {Ogg.LogicalStream} stream Input stream.
+     */
     setInputStream(inputStream) {
         stream = inputStream;
 
@@ -135,86 +108,86 @@ export class Decoder {
         Frame.setMappingTables(tables);
 
         /**
-             * Frame width in pixel.
-             *
-             * @property width
-             * @type {Number}
-             */
+         * Frame width in pixel.
+         *
+         * @property width
+         * @type {Number}
+         */
         this.width = header.picw;
 
         /**
-             * Frame height in pixel.
-             *
-             * @property height
-             * @type {Number}
-             */
+         * Frame height in pixel.
+         *
+         * @property height
+         * @type {Number}
+         */
         this.height = header.pich;
 
         /**
-             * Bitrate of the video stream.
-             *
-             * @property bitrate
-             * @type {Number}
-             */
+         * Bitrate of the video stream.
+         *
+         * @property bitrate
+         * @type {Number}
+         */
         this.bitrate = header.nombr;
 
         /**
-             * Comments decoded from the comment header.
-             * This is a key <-> value hash map.
-             *
-             * @property comments
-             * @type {Object}
-             */
+         * Comments decoded from the comment header.
+         * This is a key <-> value hash map.
+         *
+         * @property comments
+         * @type {Object}
+         */
         this.comments = header.comments;
 
         /**
-             * Vendor name, set by the encoder.
-             *
-             * @property vendor
-             * @type {String}
-             */
+         * Vendor name, set by the encoder.
+         *
+         * @property vendor
+         * @type {String}
+         */
         this.vendor = header.vendor;
 
         /**
-             * The framerate of the video.
-             *
-             * @property framerate
-             * @type {Number}
-             */
+         * The framerate of the video.
+         *
+         * @property framerate
+         * @type {Number}
+         */
         this.framerate = header.frn / header.frd;
 
         /**
-             * Pixel format. The subsampling mode.
-             * 0 = 4:2:0 subsampling
-             * 2 = 4:2:2 subsampling
-             * 3 = 4:4:4 subsampling
-             *
-             * @property pixelFormat
-             * @type {Number}
-             */
+         * Pixel format. The subsampling mode.
+         * 0 = 4:2:0 subsampling
+         * 2 = 4:2:2 subsampling
+         * 3 = 4:4:4 subsampling
+         *
+         * @property pixelFormat
+         * @type {Number}
+         */
         this.pixelFormat = header.pf;
 
         /**
-             * X offset of the picture region
-             *
-             * @property xOffset
-             */
+         * X offset of the picture region
+         *
+         * @property xOffset
+         */
         this.xOffset = header.picx;
 
         /**
-             * Y offset of the picture region
-             *
-             * @property yOffset
-             */
+         * Y offset of the picture region
+         *
+         * @property yOffset
+         */
         this.yOffset = header.picy;
     }
 
     /**
-         * Get the next frame in the stream.
-         *
-         * @method nextFrame
-         * @return {Object}
-         */
+     * Get the next frame in the stream.
+     *
+     * @method nextFrame
+     * @return {Object}
+     */
     nextFrame() {
         const packet = stream.nextPacket();
         let frame;
@@ -223,11 +196,7 @@ export class Decoder {
             return false;
         }
 
-        frame = new Frame(
-            packet,
-            this.goldReferenceFrame,
-            this.prefReferenceFrame
-        );
+        frame = new Frame(packet, this.goldReferenceFrame, this.prefReferenceFrame);
         frame.decode();
 
         if (frame.ftype === 0) {

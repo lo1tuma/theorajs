@@ -1,6 +1,8 @@
 export class ByteStream {
     private index: number;
+
     private length: number;
+
     private data: string;
 
     /**
@@ -18,36 +20,36 @@ export class ByteStream {
     }
 
     /**
-         * Set the data.
-         *
-         * @method setData
-         * @param {String} data
-         */
+     * Set the data.
+     *
+     * @method setData
+     * @param {String} data
+     */
     setData(data: string) {
         this.data = data;
         this.length = data.length;
     }
 
     /**
-         * Get the next 8-bit value.
-         *
-         * @method next8
-         * @return {Number}
-         */
+     * Get the next 8-bit value.
+     *
+     * @method next8
+     * @return {Number}
+     */
     next8() {
-        const val = this.data.charCodeAt(this.index) & 0xFF;
+        const val = this.data.charCodeAt(this.index) & 0xff;
 
         this.index += 1;
         return val;
     }
 
     /**
-         * Get the next 16-bit value.
-         *
-         * @method next16
-         * @param {Boolean} [littleEndian=false] Defines the byte-order
-         * @return {Number}
-         */
+     * Get the next 16-bit value.
+     *
+     * @method next16
+     * @param {Boolean} [littleEndian=false] Defines the byte-order
+     * @return {Number}
+     */
     next16(littleEndian?: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
@@ -60,12 +62,12 @@ export class ByteStream {
     }
 
     /**
-         * Get the next 24-bit value.
-         *
-         * @method next24
-         * @param {Boolean} [littleEndian=false] Defines the byte-order
-         * @return {Number}
-         */
+     * Get the next 24-bit value.
+     *
+     * @method next24
+     * @param {Boolean} [littleEndian=false] Defines the byte-order
+     * @return {Number}
+     */
     next24(littleEndian?: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
@@ -79,12 +81,12 @@ export class ByteStream {
     }
 
     /**
-         * Get the next 32-bit value.
-         *
-         * @method next32
-         * @param {Boolean} [littleEndian=false] Defines the byte-order
-         * @return {Number}
-         */
+     * Get the next 32-bit value.
+     *
+     * @method next32
+     * @param {Boolean} [littleEndian=false] Defines the byte-order
+     * @return {Number}
+     */
     next32(littleEndian?: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
@@ -99,14 +101,14 @@ export class ByteStream {
     }
 
     /**
-         * Get the next 64-bit value.
-         * Javascript can't handle 64bit integers and all bit operations are performed with 32-bit arithmetic.
-         * Therefore this method will return an object with 2 values, lowBits and highBits.
-         *
-         * @method next64
-         * @param {Boolean} [littleEndian=false] Defines the byte-order
-         * @return {Object}
-         */
+     * Get the next 64-bit value.
+     * Javascript can't handle 64bit integers and all bit operations are performed with 32-bit arithmetic.
+     * Therefore this method will return an object with 2 values, lowBits and highBits.
+     *
+     * @method next64
+     * @param {Boolean} [littleEndian=false] Defines the byte-order
+     * @return {Object}
+     */
     next64(littleEndian?: boolean) {
         const b1 = this.next8();
         const b2 = this.next8();
@@ -131,13 +133,13 @@ export class ByteStream {
     }
 
     /**
-         * Generates a byte array of a specified number of values.
-         * If there are not enough values left, the maximum of available values will be returned.
-         *
-         * @method nextArray
-         * @param {Number} n Numer of values
-         * @return {Array}
-         */
+     * Generates a byte array of a specified number of values.
+     * If there are not enough values left, the maximum of available values will be returned.
+     *
+     * @method nextArray
+     * @param {Number} n Numer of values
+     * @return {Array}
+     */
     nextArray(n: number): number[] {
         const bytes = [];
         let i;
@@ -155,11 +157,11 @@ export class ByteStream {
     }
 
     /**
-         * Skip a specified number of 8-bit values.
-         *
-         * @method skip
-         * @param {Number} n Number of values.
-         */
+     * Skip a specified number of 8-bit values.
+     *
+     * @method skip
+     * @param {Number} n Number of values.
+     */
     skip(n: number) {
         this.index += n;
     }

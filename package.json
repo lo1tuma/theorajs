@@ -37,7 +37,7 @@
         "envs": [
             "node"
         ],
-        "prettier": false,
+        "prettier": true,
         "nodeVersion": "11",
         "extends": "xo-typescript",
         "extensions": [

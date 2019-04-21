@@ -22,32 +22,32 @@ const qrsizes = [];
 const qrbmis = [];
 
 /**
-     * Checks if the ogg packet is a theora header.
-     *
-     * @method isTheora
-     * @param {Ogg.Packet} packet
-     * @return {Boolean}
-     */
+ * Checks if the ogg packet is a theora header.
+ *
+ * @method isTheora
+ * @param {Ogg.Packet} packet
+ * @return {Boolean}
+ */
 export function isTheora(packet) {
     // Bytes 1-6 have to be 'Theora'
     return (
         packet.get8(1) === 0x74 &&
-            packet.get8(2) === 0x68 &&
-            packet.get8(3) === 0x65 &&
-            packet.get8(4) === 0x6F &&
-            packet.get8(5) === 0x72 &&
-            packet.get8(6) === 0x61
+        packet.get8(2) === 0x68 &&
+        packet.get8(3) === 0x65 &&
+        packet.get8(4) === 0x6f &&
+        packet.get8(5) === 0x72 &&
+        packet.get8(6) === 0x61
     );
 }
 
 /**
-     * Decode a 32-bit length value from packet in little endian order
-     *
-     * @method decodeCommentLength
-     * @private
-     * @param {Ogg.Packet}
-     * @return {Number} Length
-     */
+ * Decode a 32-bit length value from packet in little endian order
+ *
+ * @method decodeCommentLength
+ * @private
+ * @param {Ogg.Packet}
+ * @return {Number} Length
+ */
 function decodeCommentLength(packet) {
     const len0 = packet.next8();
     const len1 = packet.next8();
@@ -58,12 +58,12 @@ function decodeCommentLength(packet) {
 }
 
 /**
-     * Quantization Parameters Decode
-     *
-     * @method decodeQuantizationParameters
-     * @private
-     * @param {util.BitStream} reader
-     */
+ * Quantization Parameters Decode
+ *
+ * @method decodeQuantizationParameters
+ * @private
+ * @param {util.BitStream} reader
+ */
 function decodeQuantizationParameters(reader) {
     // A quantization type index
     let qti;
@@ -171,9 +171,7 @@ function decodeQuantizationParameters(reader) {
                 qri = 0;
                 qi = 0;
 
-                qrbmis[qti][pli][qri] = reader.nextBits(
-                    ilog(nbms - 1)
-                );
+                qrbmis[qti][pli][qri] = reader.nextBits(ilog(nbms - 1));
                 if (qrbmis[qti][pli][qri] >= nbms) {
                     throw {
                         name: 'TheoraError',
@@ -182,13 +180,10 @@ function decodeQuantizationParameters(reader) {
                 }
 
                 while (qi < 63) {
-                    qrsizes[qti][pli][qri] =
-                            reader.nextBits(ilog(62 - qi)) + 1;
+                    qrsizes[qti][pli][qri] = reader.nextBits(ilog(62 - qi)) + 1;
                     qi += qrsizes[qti][pli][qri];
                     qri += 1;
-                    qrbmis[qti][pli][qri] = reader.nextBits(
-                        ilog(nbms - 1)
-                    );
+                    qrbmis[qti][pli][qri] = reader.nextBits(ilog(nbms - 1));
                 }
 
                 if (qi > 63) {
@@ -205,13 +200,13 @@ function decodeQuantizationParameters(reader) {
 }
 
 /**
-     * Loop Filter Limit Table Decode
-     *
-     * @method decodeLFLTable
-     * @private
-     * @param {BitStream} reader
-     * @return {Array} A 64-element array of loop filter limit values
-     */
+ * Loop Filter Limit Table Decode
+ *
+ * @method decodeLFLTable
+ * @private
+ * @param {BitStream} reader
+ * @return {Array} A 64-element array of loop filter limit values
+ */
 function decodeLFLTable(reader) {
     // The size of values being read in the current table
     let nbits;
@@ -233,14 +228,14 @@ function decodeLFLTable(reader) {
 }
 
 /**
-     * Computing a Quantization Matrix
-     *
-     * @method computeQuantizationMatrix
-     * @param {Number} qti Quantization type index
-     * @param {Number} pli Color plane index
-     * @param {Number} qi Quantization index
-     * @return {Array} 64-element array of quantization values for each DCT coefficient in natural order
-     */
+ * Computing a Quantization Matrix
+ *
+ * @method computeQuantizationMatrix
+ * @param {Number} qti Quantization type index
+ * @param {Number} pli Color plane index
+ * @param {Number} qi Quantization index
+ * @return {Array} 64-element array of quantization values for each DCT coefficient in natural order
+ */
 export function computeQuantizationMatrix(qti, pli, qi) {
     // Quantization values for each DCT coefficient
     const qmat = [];
@@ -286,10 +281,8 @@ export function computeQuantizationMatrix(qti, pli, qi) {
     bmj = qrbmis[qti][pli][qri + 1];
     for (ci = 0; ci < 64; ci += 1) {
         bm = toInt(
-            (2 * (qiEnd - qi) * bms[bmi][ci] +
-                    2 * (qi - qiStart) * bms[bmj][ci] +
-                    qrsizes[qti][pli][qri]) /
-                    (2 * qrsizes[qti][pli][qri])
+            (2 * (qiEnd - qi) * bms[bmi][ci] + 2 * (qi - qiStart) * bms[bmj][ci] + qrsizes[qti][pli][qri]) /
+                (2 * qrsizes[qti][pli][qri])
         );
 
         qmin = 16;
@@ -305,26 +298,23 @@ export function computeQuantizationMatrix(qti, pli, qi) {
             qscale = acScale[qi];
         }
 
-        qmat[ci] = Math.max(
-            qmin,
-            Math.min(toInt((qscale * bm) / 100) * 4, 4096)
-        );
+        qmat[ci] = Math.max(qmin, Math.min(toInt((qscale * bm) / 100) * 4, 4096));
     }
 
     return qmat;
 }
 
 /**
-     * Recursive helper function to decode a huffman tree
-     *
-     * @method buildSubtree
-     * @private
-     * @param {String} hbits A Bit-string of up to 32 bits
-     * @param {BitStream} reader
-     * @param {Array} Huffman table
-     * @param {Number} Huffman table index
-     * @param {Number} numberOfHuffmanCodeds Current number of Huffman codes
-     */
+ * Recursive helper function to decode a huffman tree
+ *
+ * @method buildSubtree
+ * @private
+ * @param {String} hbits A Bit-string of up to 32 bits
+ * @param {BitStream} reader
+ * @param {Array} Huffman table
+ * @param {Number} Huffman table index
+ * @param {Number} numberOfHuffmanCodeds Current number of Huffman codes
+ */
 function buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) {
     // Flag that indicates if the current node of the tree being decoded is a leaf node
     let isLeaf;
@@ -349,37 +339,25 @@ function buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) {
     }
 
     hbits += '0';
-    numberOfHuffmanCodes = buildSubtree(
-        hbits,
-        reader,
-        hts,
-        hti,
-        numberOfHuffmanCodes
-    );
+    numberOfHuffmanCodes = buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes);
 
     // Remove last char
     hbits = hbits.slice(0, -1);
     hbits += '1';
-    numberOfHuffmanCodes = buildSubtree(
-        hbits,
-        reader,
-        hts,
-        hti,
-        numberOfHuffmanCodes
-    );
+    numberOfHuffmanCodes = buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes);
 
     // Remove last char
     hbits = hbits.slice(0, -1);
 }
 
 /**
-     * Decode all huffman tables.
-     *
-     * @method decodeHuffmanTables
-     * @private
-     * @param {BitStream} reader
-     * @return {Array} 80-element array of Huffman tables with up to 32 entries each
-     */
+ * Decode all huffman tables.
+ *
+ * @method decodeHuffmanTables
+ * @private
+ * @param {BitStream} reader
+ * @return {Array} 80-element array of Huffman tables with up to 32 entries each
+ */
 function decodeHuffmanTables(reader) {
     // Return value
     const hts = [];
@@ -403,11 +381,11 @@ function decodeHuffmanTables(reader) {
 
 export class Header {
     /**
-         * Decodes the identification header.
-         *
-         * @method decodeIdentificationHeader
-         * @param {Ogg.Packet} packet
-         */
+     * Decodes the identification header.
+     *
+     * @method decodeIdentificationHeader
+     * @param {Ogg.Packet} packet
+     */
     decodeIdentificationHeader(packet) {
         // The current header type
         const headerType = packet.get8(0);
@@ -427,132 +405,132 @@ export class Header {
         packet.seek(7);
 
         /**
-             * The major version number
-             *
-             * @property vmaj
-             */
+         * The major version number
+         *
+         * @property vmaj
+         */
         this.vmaj = packet.next8();
 
         /**
-             * The minor version number
-             *
-             * @property vmin
-             */
+         * The minor version number
+         *
+         * @property vmin
+         */
         this.vmin = packet.next8();
 
         /**
-             * The version revision number
-             *
-             * @property vrev
-             */
+         * The version revision number
+         *
+         * @property vrev
+         */
         this.vrev = packet.next8();
 
         /**
-             * The width of the frame in macro blocks
-             *
-             * @property fmbw
-             */
+         * The width of the frame in macro blocks
+         *
+         * @property fmbw
+         */
         this.fmbw = packet.next16();
 
         /**
-             * The height of the frame in macro blocks
-             *
-             * @property fmbh
-             */
+         * The height of the frame in macro blocks
+         *
+         * @property fmbh
+         */
         this.fmbh = packet.next16();
 
         /**
-             * The width of the picture region in pixels
-             *
-             * @property picw
-             */
+         * The width of the picture region in pixels
+         *
+         * @property picw
+         */
         this.picw = packet.next24();
 
         /**
-             * The height of the picture region in pixels
-             *
-             * @property pich
-             */
+         * The height of the picture region in pixels
+         *
+         * @property pich
+         */
         this.pich = packet.next24();
 
         /**
-             * The X offset of the picture region in pixels
-             *
-             * @property picx
-             */
+         * The X offset of the picture region in pixels
+         *
+         * @property picx
+         */
         this.picx = packet.next8();
 
         /**
-             * The Y offset of the picture region in pixels
-             *
-             * @property picy
-             */
+         * The Y offset of the picture region in pixels
+         *
+         * @property picy
+         */
         this.picy = packet.next8();
 
         /**
-             * The frame-rate numerator
-             *
-             * @property frn
-             */
+         * The frame-rate numerator
+         *
+         * @property frn
+         */
         this.frn = packet.next32();
 
         /**
-             * The frame-rate denominator
-             *
-             * @property frd
-             */
+         * The frame-rate denominator
+         *
+         * @property frd
+         */
         this.frd = packet.next32();
 
         /**
-             * The pixel aspect-ratio numerator
-             *
-             * @property parn
-             */
+         * The pixel aspect-ratio numerator
+         *
+         * @property parn
+         */
         this.parn = packet.next24();
 
         /**
-             * The pixel aspect-ratio denominator
-             *
-             * @property pard
-             */
+         * The pixel aspect-ratio denominator
+         *
+         * @property pard
+         */
         this.pard = packet.next24();
 
         /**
-             * The color space
-             *
-             * @property cs
-             */
+         * The color space
+         *
+         * @property cs
+         */
         this.cs = packet.next8();
 
         /**
-             * The nominal bitrate of the stream, in bits per second
-             *
-             * @property nombr
-             */
+         * The nominal bitrate of the stream, in bits per second
+         *
+         * @property nombr
+         */
         this.nombr = packet.next24();
 
         // Reading 6 bit quality hint, 5 bit kfgshift, 2 bit pixel format und 3 reserved bits
         data = packet.next16();
 
         /**
-             * The quality hint
-             *
-             * @property qual
-             */
+         * The quality hint
+         *
+         * @property qual
+         */
         this.qual = data >> 10;
 
         /**
-             * The amount to shift the key frame number by in the granule position
-             *
-             * @property kfgshift
-             */
-        this.kfgshift = (data >> 5) & 0x1F;
+         * The amount to shift the key frame number by in the granule position
+         *
+         * @property kfgshift
+         */
+        this.kfgshift = (data >> 5) & 0x1f;
 
         /**
-             * The pixel format
-             *
-             * @property pf
-             */
+         * The pixel format
+         *
+         * @property pf
+         */
         this.pf = (data >> 3) & 0x03;
 
         // Reserved bits must be zero or we haven’t a valid stream
@@ -561,31 +539,31 @@ export class Header {
         }
 
         /**
-             * The number of macro blocks
-             *
-             * @property nmbs
-             */
+         * The number of macro blocks
+         *
+         * @property nmbs
+         */
         this.nmbs = this.fmbw * this.fmbh;
 
         /**
-             * The number of blocks in the luma plane
-             *
-             * @property nlbs
-             */
+         * The number of blocks in the luma plane
+         *
+         * @property nlbs
+         */
         this.nlbs = 4 * this.nmbs;
 
         /**
-             * Frame width of the luma plane in blocks
-             *
-             * @property flbw
-             */
+         * Frame width of the luma plane in blocks
+         *
+         * @property flbw
+         */
         this.flbw = 2 * this.fmbw;
 
         /**
-             * Frame height of the luma plane in blocks
-             *
-             * @property flbh
-             */
+         * Frame height of the luma plane in blocks
+         *
+         * @property flbh
+         */
         this.flbh = 2 * this.fmbh;
 
         // Determine the correct number of blocks and super blocks corresponding to the pixel format
@@ -595,54 +573,48 @@ export class Header {
         switch (this.pf) {
         case 0:
             /**
-                     * The number of super blocks
-                     *
-                     * @property nsbs
-                     */
+                 * The number of super blocks
+                 *
+                 * @property nsbs
+                 */
             this.nsbs =
-                        toInt((this.fmbw + 1) / 2) *
-                            toInt((this.fmbh + 1) / 2) +
-                        2 *
-                            toInt((this.fmbw + 3) / 4) *
-                            toInt((this.fmbh + 3) / 4);
+                    toInt((this.fmbw + 1) / 2) * toInt((this.fmbh + 1) / 2) +
+                    2 * toInt((this.fmbw + 3) / 4) * toInt((this.fmbh + 3) / 4);
 
             /**
-                     * The number of blocks
-                     *
-                     * @property nbs
-                     */
+                 * The number of blocks
+                 *
+                 * @property nbs
+                 */
             this.nbs = 6 * this.fmbw * this.fmbh;
 
             /**
-                     * The number of blocks in each chroma plane
-                     *
-                     * @property ncbs
-                     */
+                 * The number of blocks in each chroma plane
+                 *
+                 * @property ncbs
+                 */
             this.ncbs = this.fmbw * this.fmbh;
 
             /**
-                     * Frame width of each chroma plane in blocks
-                     *
-                     * @property fcbw
-                     */
+                 * Frame width of each chroma plane in blocks
+                 *
+                 * @property fcbw
+                 */
             this.fcbw = this.fmbw;
 
             /**
-                     * Frame height of each chroma plane in blocks
-                     *
-                     * @property fmbh
-                     */
+                 * Frame height of each chroma plane in blocks
+                 *
+                 * @property fmbh
+                 */
             this.fcbh = this.fmbh;
 
             break;
         case 2:
             // The number of super blocks
             this.nsbs =
-                        toInt((this.fmbw + 1) / 2) *
-                            toInt((this.fmbh + 1) / 2) +
-                        2 *
-                            toInt((this.fmbw + 3) / 4) *
-                            toInt((this.fmbh + 1) / 2);
+                    toInt((this.fmbw + 1) / 2) * toInt((this.fmbh + 1) / 2) +
+                    2 * toInt((this.fmbw + 3) / 4) * toInt((this.fmbh + 1) / 2);
             // The number of blocks
             this.nbs = 8 * this.fmbw * this.fmbh;
 
@@ -658,10 +630,7 @@ export class Header {
             break;
         case 3:
             // The number of super blocks
-            this.nsbs =
-                        3 *
-                        toInt((this.fmbw + 1) / 2) *
-                        toInt((this.fmbh + 1) / 2);
+            this.nsbs = 3 * toInt((this.fmbw + 1) / 2) * toInt((this.fmbh + 1) / 2);
 
             // The number of blocks
             this.nbs = 12 * this.fmbw * this.fmbh;
@@ -685,11 +654,11 @@ export class Header {
     }
 
     /**
-         * Decodes the comment header.
-         *
-         * @method decodeCommentHeader
-         * @param {Ogg.Packet} packet
-         */
+     * Decodes the comment header.
+     *
+     * @method decodeCommentHeader
+     * @param {Ogg.Packet} packet
+     */
     decodeCommentHeader(packet) {
         // The current header type
         const headerType = packet.get8(0);
@@ -723,10 +692,10 @@ export class Header {
         len = decodeCommentLength(packet);
 
         /**
-             * The vendor string
-             *
-             * @property vendor
-             */
+         * The vendor string
+         *
+         * @property vendor
+         */
         this.vendor = '';
 
         for (i = 0; i < len; i += 1) {
@@ -737,11 +706,11 @@ export class Header {
         ncomments = decodeCommentLength(packet);
 
         /**
-             * Key <-> value map of all comments
-             *
-             * @property comments
-             * @type {Object}
-             */
+         * Key <-> value map of all comments
+         *
+         * @property comments
+         * @type {Object}
+         */
         this.comments = {};
 
         for (ci = 0; ci < ncomments; ci += 1) {
@@ -764,11 +733,11 @@ export class Header {
     }
 
     /**
-         * Decodes the setup header.
-         *
-         * @method decodeSetupHeader
-         * @param {Ogg.Packet} packet
-         */
+     * Decodes the setup header.
+     *
+     * @method decodeSetupHeader
+     * @param {Ogg.Packet} packet
+     */
     decodeSetupHeader(packet) {
         // The header type
         const headerType = packet.get8(0);
@@ -787,39 +756,39 @@ export class Header {
         reader = new Bitstream(packet, 7);
 
         /**
-             * A 64-element array of loop filter limit values
-             *
-             * @property lflims
-             * @type {Array}
-             */
+         * A 64-element array of loop filter limit values
+         *
+         * @property lflims
+         * @type {Array}
+         */
         this.lflims = decodeLFLTable(reader);
 
         decodeQuantizationParameters(reader);
 
         /**
-             * An 80-element array of Huffman tables with up to 32 entries each.
-             *
-             * @property hts
-             * @type {Array}
-             */
+         * An 80-element array of Huffman tables with up to 32 entries each.
+         *
+         * @property hts
+         * @type {Array}
+         */
         this.hts = decodeHuffmanTables(reader);
     }
 
     /**
-         * Pre-computes all quantization matrices.
-         *
-         * @method computeQuantizationMatrices
-         */
+     * Pre-computes all quantization matrices.
+     *
+     * @method computeQuantizationMatrices
+     */
     computeQuantizationMatrices() {
         let qti;
         let pli;
         let qi;
 
         /**
-             * All quantization matrices, which will be the same for all frames.
-             *
-             * @property qmats
-             */
+         * All quantization matrices, which will be the same for all frames.
+         *
+         * @property qmats
+         */
         this.qmats = [];
 
         for (qti = 0; qti < 2; qti += 1) {
@@ -827,11 +796,7 @@ export class Header {
             for (pli = 0; pli < 3; pli += 1) {
                 this.qmats[qti][pli] = [];
                 for (qi = 0; qi < 64; qi += 1) {
-                    this.qmats[qti][pli][qi] = computeQuantizationMatrix(
-                        qti,
-                        pli,
-                        qi
-                    );
+                    this.qmats[qti][pli][qi] = computeQuantizationMatrix(qti, pli, qi);
                 }
             }
         }

@@ -2,17 +2,29 @@ import { ByteStream } from '../stream/byteStream';
 
 export class Page {
     private stream: ByteStream;
+
     public capturePattern: string;
+
     public version: number;
+
     public headerType: number;
-    public granulePosition: { lowBits: number, highBits: number };
+
+    public granulePosition: { lowBits: number; highBits: number };
+
     public serialNumber: number;
+
     public pageSequenceNumber: number;
+
     public checksum: number;
+
     public pageSegments: number;
-    public segmentTable: Array<number>;
-    public segments: Array<Array<number>>;
+
+    public segmentTable: number[];
+
+    public segments: number[][];
+
     public headerLength: number;
+
     public bodyLength: number;
 
     constructor(stream: ByteStream) {
@@ -26,12 +38,7 @@ export class Page {
          * @property capturePattern
          * @type String
          */
-        this.capturePattern = String.fromCharCode(
-            stream.next8(),
-            stream.next8(),
-            stream.next8(),
-            stream.next8()
-        );
+        this.capturePattern = String.fromCharCode(stream.next8(), stream.next8(), stream.next8(), stream.next8());
 
         // Check for valid ogg page
         if (!this.isValid()) {
@@ -144,43 +151,43 @@ export class Page {
     }
 
     /**
-         * Checks if the page has a valid capturePattern.
-         *
-         * @method isValid
-         * @return {Boolean}
-         */
+     * Checks if the page has a valid capturePattern.
+     *
+     * @method isValid
+     * @return {Boolean}
+     */
     isValid() {
         return this.capturePattern === 'OggS';
     }
 
     /**
-         * Checks if the page is a continued page or the first page within a logical stream.
-         *
-         * @method isContinuedPage
-         * @return {Boolean}
-         */
+     * Checks if the page is a continued page or the first page within a logical stream.
+     *
+     * @method isContinuedPage
+     * @return {Boolean}
+     */
     isContinuedPage() {
         // Check bit flag
         return (this.headerType & 0x01) === 0x01;
     }
 
     /**
-         * Checks if the page is the last page within a logical stream.
-         *
-         * @method isEndOfStream
-         * @return {Boolean}
-         */
+     * Checks if the page is the last page within a logical stream.
+     *
+     * @method isEndOfStream
+     * @return {Boolean}
+     */
     isEndOfStream() {
         // Check bit flag
         return (this.headerType & 0x04) === 0x04;
     }
 
     /**
-         * Checks if the page is the first page within a logical stream.
-         *
-         * @method isBeginOfStream
-         * @return {Boolean}
-         */
+     * Checks if the page is the first page within a logical stream.
+     *
+     * @method isBeginOfStream
+     * @return {Boolean}
+     */
     isBeginOfStream() {
         // Check bit flag
         return (this.headerType & 0x02) === 0x02;

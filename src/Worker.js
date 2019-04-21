@@ -1,6 +1,4 @@
-importScripts(
-    'https://raw.github.com/lo1tuma/theorajs/master/build/theorajs-0.1.js'
-);
+importScripts('https://raw.github.com/lo1tuma/theorajs/master/build/theorajs-0.1.js');
 
 // Dependencies
 const { decoder } = TheoraJS.Theora;
@@ -14,7 +12,7 @@ let running = false;
 let divy = 1;
 let divx = 1;
 
-onmessage = function (event) {
+onmessage = function(event) {
     const msg = event.data;
 
     if (msg.type !== 'command') {

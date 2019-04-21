@@ -88,7 +88,7 @@ test('reads the given amount of bytes an returns them a byte array', (t) => {
 
     stream.setData('foobarqux');
 
-    t.deepEqual(stream.nextArray(3), [ 102, 111, 111 ]);
+    t.deepEqual(stream.nextArray(3), [102, 111, 111]);
 });
 
 test('skips the given amount of bytes', (t) => {
@@ -97,5 +97,5 @@ test('skips the given amount of bytes', (t) => {
     stream.setData('foobarqux');
     stream.skip(6);
 
-    t.deepEqual(stream.nextArray(3), [ 113, 117, 120 ]);
+    t.deepEqual(stream.nextArray(3), [113, 117, 120]);
 });

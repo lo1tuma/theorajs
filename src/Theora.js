@@ -7,7 +7,7 @@
  */
 const TheoraJS = {};
 
-(function () {
+(function() {
     'use strict';
 
     /**
@@ -21,7 +21,7 @@ const TheoraJS = {};
 	 * @param {String} namespace Namespace specifier
 	 * @static
 	 */
-    TheoraJS.namespace = function (namespace) {
+    TheoraJS.namespace = function(namespace) {
         let parts = namespace.split('.');
         let parent = TheoraJS;
         let i;
@@ -51,7 +51,7 @@ const TheoraJS = {};
      * @param {Object} obj1
      * @param {Object} obj2
      */
-    TheoraJS.mixin = function (obj1, obj2) {
+    TheoraJS.mixin = function(obj1, obj2) {
         let member;
 
         for (member in obj2) {
@@ -71,9 +71,9 @@ const TheoraJS = {};
      * @param {Function} parent
      * @static
      */
-    TheoraJS.inherit = (function () {
-        const F = function () {};
-        return function (child, parent) {
+    TheoraJS.inherit = (function() {
+        const F = function() {};
+        return function(child, parent) {
             F.prototype = parent.prototype;
             child.prototype = new F();
             child.uber = parent.prototype;

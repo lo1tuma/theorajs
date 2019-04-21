@@ -4,10 +4,15 @@ import { Page } from './page';
 
 export class LogicalStream {
     private stream: TransportStream;
+
     public serialNumber: number;
+
     private currentPage: Page;
+
     private segmentOffset: number;
+
     private initialPacket: false | Packet;
+
     private lastPageNumber: number;
 
     /**
@@ -141,10 +146,7 @@ export class LogicalStream {
         // Reading pages until we will find a page which belongs to this logical stream
         do {
             page = this.stream.nextPage();
-        } while (
-            page.serialNumber !== this.serialNumber &&
-            !page.isEndOfStream()
-        );
+        } while (page.serialNumber !== this.serialNumber && !page.isEndOfStream());
 
         // Check if there is a lost page
         if (page.pageSequenceNumber - 1 !== this.lastPageNumber) {

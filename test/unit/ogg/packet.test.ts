@@ -9,7 +9,7 @@ test('getLength() returns 0 when no segment has been added yet', (t) => {
 
 test('getLength() returns the same length as the segment when one segment has been added', (t) => {
     const packet = new Packet();
-    const segment = [ 42, 42, 42, 42 ];
+    const segment = [42, 42, 42, 42];
 
     packet.addSegment(segment);
 
@@ -18,8 +18,8 @@ test('getLength() returns the same length as the segment when one segment has be
 
 test('getLength() returns the sum of all segments length that have been added so far', (t) => {
     const packet = new Packet();
-    const firstSegment = [ 1, 2 ];
-    const secondSegment = [ 3 ];
+    const firstSegment = [1, 2];
+    const secondSegment = [3];
 
     packet.addSegment(firstSegment);
     packet.addSegment(secondSegment);
@@ -29,7 +29,7 @@ test('getLength() returns the sum of all segments length that have been added so
 
 test('next8() returns the first byte on the first call', (t) => {
     const packet = new Packet();
-    const segment = [ 42 ];
+    const segment = [42];
 
     packet.addSegment(segment);
 
@@ -38,7 +38,7 @@ test('next8() returns the first byte on the first call', (t) => {
 
 test('next8() returns the second byte on the second call', (t) => {
     const packet = new Packet();
-    const segment = [ 1, 2 ];
+    const segment = [1, 2];
 
     packet.addSegment(segment);
     packet.next8();
@@ -48,8 +48,8 @@ test('next8() returns the second byte on the second call', (t) => {
 
 test('next8() returns the second byte, added by the second segment, on the second call', (t) => {
     const packet = new Packet();
-    const firstSegment = [ 1 ];
-    const secondSegment = [ 2 ];
+    const firstSegment = [1];
+    const secondSegment = [2];
 
     packet.addSegment(firstSegment);
     packet.addSegment(secondSegment);
@@ -60,7 +60,7 @@ test('next8() returns the second byte, added by the second segment, on the secon
 
 test('next16() returns the 16-bit value of the first two bytes on the first call', (t) => {
     const packet = new Packet();
-    const segment = [ 1, 1 ];
+    const segment = [1, 1];
 
     packet.addSegment(segment);
 
@@ -69,7 +69,7 @@ test('next16() returns the 16-bit value of the first two bytes on the first call
 
 test('next16() returns the 16-bit value of the two bytes after calling next8() first', (t) => {
     const packet = new Packet();
-    const segment = [ 0, 1, 1 ];
+    const segment = [0, 1, 1];
 
     packet.addSegment(segment);
     packet.next8();
@@ -79,8 +79,8 @@ test('next16() returns the 16-bit value of the two bytes after calling next8() f
 
 test('next16() works correctly when its data originated from different segments', (t) => {
     const packet = new Packet();
-    const firstSegment = [ 0, 1 ];
-    const secondSegment = [ 1 ];
+    const firstSegment = [0, 1];
+    const secondSegment = [1];
 
     packet.addSegment(firstSegment);
     packet.addSegment(secondSegment);
@@ -91,7 +91,7 @@ test('next16() works correctly when its data originated from different segments'
 
 test('next24() returns the 24-bit value of the first three bytes on the first call', (t) => {
     const packet = new Packet();
-    const segment = [ 1, 0, 0 ];
+    const segment = [1, 0, 0];
 
     packet.addSegment(segment);
 
@@ -100,7 +100,7 @@ test('next24() returns the 24-bit value of the first three bytes on the first ca
 
 test('next24() returns the 24-bit value of the three bytes after calling next8() first', (t) => {
     const packet = new Packet();
-    const segment = [ 1, 1, 0, 0 ];
+    const segment = [1, 1, 0, 0];
 
     packet.addSegment(segment);
     packet.next8();
@@ -110,8 +110,8 @@ test('next24() returns the 24-bit value of the three bytes after calling next8()
 
 test('next24() works correctly when its data originated from different segments', (t) => {
     const packet = new Packet();
-    const firstSegment = [ 1, 1 ];
-    const secondSegment = [ 0, 0 ];
+    const firstSegment = [1, 1];
+    const secondSegment = [0, 0];
 
     packet.addSegment(firstSegment);
     packet.addSegment(secondSegment);
@@ -122,7 +122,7 @@ test('next24() works correctly when its data originated from different segments'
 
 test('next32() returns the 32-bit value of the first four bytes on the first call', (t) => {
     const packet = new Packet();
-    const segment = [ 1, 0, 0, 0 ];
+    const segment = [1, 0, 0, 0];
 
     packet.addSegment(segment);
 
@@ -131,7 +131,7 @@ test('next32() returns the 32-bit value of the first four bytes on the first cal
 
 test('next32() returns the 32-bit value of the four bytes after calling next8() first', (t) => {
     const packet = new Packet();
-    const segment = [ 1, 1, 0, 0, 0 ];
+    const segment = [1, 1, 0, 0, 0];
 
     packet.addSegment(segment);
     packet.next8();
@@ -141,8 +141,8 @@ test('next32() returns the 32-bit value of the four bytes after calling next8() 
 
 test('next32() works correctly when its data originated from different segments', (t) => {
     const packet = new Packet();
-    const firstSegment = [ 1, 1 ];
-    const secondSegment = [ 0, 0 ];
+    const firstSegment = [1, 1];
+    const secondSegment = [0, 0];
 
     packet.addSegment(firstSegment);
     packet.addSegment(secondSegment);
@@ -153,8 +153,8 @@ test('next32() works correctly when its data originated from different segments'
 
 test('get8() returns the 8-bit value of the byte for the given index', (t) => {
     const packet = new Packet();
-    const firstSegment = [ 1, 2 ];
-    const secondSegment = [ 3, 4 ];
+    const firstSegment = [1, 2];
+    const secondSegment = [3, 4];
 
     packet.addSegment(firstSegment);
     packet.addSegment(secondSegment);
@@ -164,7 +164,7 @@ test('get8() returns the 8-bit value of the byte for the given index', (t) => {
 
 test('skip() skips the given amount of bytes', (t) => {
     const packet = new Packet();
-    const segment = [ 1, 2, 3, 4, 5, 6 ];
+    const segment = [1, 2, 3, 4, 5, 6];
 
     packet.addSegment(segment);
     packet.skip(3);
@@ -174,7 +174,7 @@ test('skip() skips the given amount of bytes', (t) => {
 
 test('seek() set the current cursor to the given position', (t) => {
     const packet = new Packet();
-    const segment = [ 1, 2, 3, 4, 5, 6 ];
+    const segment = [1, 2, 3, 4, 5, 6];
 
     packet.addSegment(segment);
     packet.skip(3);

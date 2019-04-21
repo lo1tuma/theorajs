@@ -1,6 +1,6 @@
 import { ByteStream } from './byteStream';
 
-const fetch = function (url: string, callback: Function) {
+const fetch = function(url: string, callback: Function) {
     // To-do: ajax: cross browser compatibility
     const req = new XMLHttpRequest();
 
@@ -8,7 +8,7 @@ const fetch = function (url: string, callback: Function) {
     req.overrideMimeType('text/plain; charset=x-user-defined');
     req.open('GET', url, true);
 
-    req.onreadystatechange = function () {
+    req.onreadystatechange = function() {
         if (req.readyState === 4) {
             if (typeof callback === 'function') {
                 callback(req.responseText);
