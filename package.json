@@ -52,6 +52,7 @@
                     "SwitchCase": 0
                 }
             ],
+            "@typescript-eslint/member-naming": "off",
             "unicorn/filename-case": [
                 "error",
                 {
