@@ -2,15 +2,15 @@ import { ByteStream } from '../stream/byteStream';
 
 export class Page {
     private stream: ByteStream;
-    private capturePattern: string;
-    private version: number;
-    private headerType: number;
-    private granulePosition: { lowBits: number, highBits: number };
+    public capturePattern: string;
+    public version: number;
+    public headerType: number;
+    public granulePosition: { lowBits: number, highBits: number };
     public serialNumber: number;
     public pageSequenceNumber: number;
-    private checksum: number;
+    public checksum: number;
     public pageSegments: number;
-    private segmentTable: Array<number>;
+    public segmentTable: Array<number>;
     public segments: Array<Array<number>>;
     public headerLength: number;
     public bodyLength: number;
