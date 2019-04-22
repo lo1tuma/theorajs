@@ -1,22 +1,14 @@
-import { promises as fs } from 'fs';
 import path from 'path';
 import test from 'ava';
 import { TransportStream } from '../../../src/ogg/transportStream';
 import { ByteStream } from '../../../src/stream/byteStream';
 import { Decoder } from '../../../src/theora/decoder';
+import { readOggFile, decodeAllFrames } from '../../lib/files';
 
-async function readSimpleOggFile(): Promise<ByteStream> {
-    const exampleFile = path.resolve(__dirname, '../../fixtures/320x240.ogg');
-    const data = (await fs.readFile(exampleFile)).toString('binary');
-    const byteStream = new ByteStream();
-
-    byteStream.setData(data);
-
-    return byteStream;
-}
+const simpleOggFile = path.resolve(__dirname, '../../fixtures/320x240.ogg');
 
 test('provides the correct meta information about the video stream', async (t) => {
-    const byteStream = await readSimpleOggFile();
+    const byteStream = await readOggFile(simpleOggFile);
     const transportStream = new TransportStream(byteStream);
 
     const [ videoStream ] = transportStream.findLogicalStreams();
@@ -35,19 +27,7 @@ test('provides the correct meta information about the video stream', async (t) =
 });
 
 test('decodes all frames without errors', async (t) => {
-    const byteStream = await readSimpleOggFile();
-    const transportStream = new TransportStream(byteStream);
-
-    const [ videoStream ] = transportStream.findLogicalStreams();
-
-    const decoder = new Decoder(videoStream);
-    const frames = [];
-    let frame = decoder.nextFrame();
-
-    while (frame !== false) {
-        frames.push(frame);
-        frame = decoder.nextFrame();
-    }
+    const frames = await decodeAllFrames(simpleOggFile);
 
     t.is(frames.length, 120);
 });

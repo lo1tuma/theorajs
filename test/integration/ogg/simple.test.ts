@@ -1,21 +1,13 @@
-import { promises as fs } from 'fs';
 import path from 'path';
 import test from 'ava';
 import { TransportStream } from '../../../src/ogg/transportStream';
 import { ByteStream } from '../../../src/stream/byteStream';
+import { readOggFile } from '../../lib/files';
 
-async function readSimpleOggFile(): Promise<ByteStream> {
-    const exampleFile = path.resolve(__dirname, '../../fixtures/320x240.ogg');
-    const data = (await fs.readFile(exampleFile)).toString('binary');
-    const byteStream = new ByteStream();
-
-    byteStream.setData(data);
-
-    return byteStream;
-}
+const simpleFile = path.resolve(__dirname, '../../fixtures/320x240.ogg');
 
 test('detects the correct amount of logical streams', async (t) => {
-    const byteStream = await readSimpleOggFile();
+    const byteStream = await readOggFile(simpleFile);
     const transportStream = new TransportStream(byteStream);
 
     const logicalStreams = transportStream.findLogicalStreams();
@@ -24,7 +16,7 @@ test('detects the correct amount of logical streams', async (t) => {
 });
 
 test('processes the first logical stream correctly', async (t) => {
-    const byteStream = await readSimpleOggFile();
+    const byteStream = await readOggFile(simpleFile);
     const transportStream = new TransportStream(byteStream);
 
     const logicalStreams = transportStream.findLogicalStreams();
