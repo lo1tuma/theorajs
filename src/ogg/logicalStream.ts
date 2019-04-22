@@ -1,6 +1,7 @@
 import { Packet } from './packet';
 import { TransportStream } from './transportStream';
 import { Page } from './page';
+import { OggError } from './errors';
 
 export class LogicalStream {
     public serialNumber: number;
@@ -26,10 +27,7 @@ export class LogicalStream {
      */
     constructor(transportStream: TransportStream, firstPage: Page) {
         if (!firstPage.isBeginOfStream()) {
-            throw {
-                name: 'OggError',
-                message: 'LogicalStream must be initialized with a BeginOfStream page.'
-            };
+            throw new OggError('LogicalStream must be initialized with a BeginOfStream page.');
         }
 
         this.stream = transportStream;
@@ -75,10 +73,7 @@ export class LogicalStream {
             packet.addSegment(segment);
             segment = this.nextSegment(true);
             if (!segment) {
-                throw {
-                    name: 'OggError',
-                    message: 'Missing EndOfPacket segment'
-                };
+                throw new OggError('Missing EndOfPacket segment');
             }
         }
 
@@ -112,10 +107,7 @@ export class LogicalStream {
             if (checkForContinuation) {
                 // Check for continuation bit flag
                 if (!this.currentPage.isContinuedPage()) {
-                    throw {
-                        name: 'OggError',
-                        message: 'Page is not a continud page.'
-                    };
+                    throw new OggError('Page is not a continued page.');
                 }
             }
 
@@ -149,7 +141,7 @@ export class LogicalStream {
 
         // Check if there is a lost page
         if (page.pageSequenceNumber - 1 !== this.lastPageNumber) {
-            throw { name: 'OggError', message: 'Lost data; missing page.' };
+            throw new OggError('Lost data; missing page.');
         }
 
         this.lastPageNumber = page.pageSequenceNumber;

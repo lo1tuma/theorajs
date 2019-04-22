@@ -23,7 +23,7 @@ function createValidPage(data: number[]): Page {
 }
 
 test('throws an error when the ogg capture pattern can’t be found', (t) => {
-    t.throws(() => createPage('foobar'), { message: 'Page has invalid capturePattern', name: 'OggError' });
+    t.throws(() => createPage('foobar'), { message: 'Page has invalid capturePattern.', name: 'OggError' });
 });
 
 test('doesn’t throw when a valid ogg capute pattern can be found', (t) => {

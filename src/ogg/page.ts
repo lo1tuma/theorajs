@@ -1,4 +1,5 @@
 import { ByteStream } from '../stream/byteStream';
+import { OggError } from './errors';
 
 export class Page {
     public capturePattern: string;
@@ -42,10 +43,7 @@ export class Page {
 
         // Check for valid ogg page
         if (!this.isValid()) {
-            throw {
-                name: 'OggError',
-                message: 'Page has invalid capturePattern.'
-            };
+            throw new OggError('Page has invalid capturePattern.');
         }
 
         /**

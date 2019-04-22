@@ -191,7 +191,7 @@ test('nextPacket() throws an error when a missing page was detected', (t) => {
     const logicalStream = new LogicalStream(transportStream, firstPage);
 
     logicalStream.nextPacket();
-    t.throws(() => logicalStream.nextPacket(), { name: 'OggError', message: 'Lost data; mising page.' });
+    t.throws(() => logicalStream.nextPacket(), { name: 'OggError', message: 'Lost data; missing page.' });
 });
 
 test('nextPacket() throws an error when a Packet spans over multiple pages but the second page is not a continued page', (t) => {
@@ -212,6 +212,5 @@ test('nextPacket() throws an error when a Packet spans over multiple pages but t
     const transportStream = createTransportStream({ secondPage });
     const logicalStream = new LogicalStream(transportStream, firstPage);
 
-    logicalStream.nextPacket();
     t.throws(() => logicalStream.nextPacket(), { name: 'OggError', message: 'Page is not a continued page.' });
 });
