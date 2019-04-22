@@ -1,12 +1,23 @@
-/* Dependencies */
-const { header } = TheoraJS.namespace('Theora');
-const { Frame } = TheoraJS.namespace('Theora');
-const { util } = TheoraJS.namespace('Theora');
-const { mappingTables } = TheoraJS.namespace('Theora');
+import { LogicalStream } from '../ogg/logicalStream';
+import { Packet } from '../ogg/packet';
+import { Header } from './header';
+import { Frame } from './frame';
+import { arrayFlip } from './util';
+import {
+    computeMacroBlockMappingTables,
+    computeSuperBlockSizes,
+    computeRasterToCodedOrderMappingTable,
+    computeBlockToSuperBlockTable
+} from './mappingTables';
 
-/* Private */
-let stream;
-let tables;
+export interface MappingTables {
+    biToSbi: number[];
+    rasterToCodedOrder: number[];
+    codedToRasterOrder: number[];
+    biToMbi: number[];
+    mbiToBi: number[][];
+    superBlockSizes: number[];
+}
 
 /**
  * Generates all mapping tables which are shared for all frames.
@@ -14,98 +25,107 @@ let tables;
  * @method computeMappingTables
  * @private
  */
-function computeMappingTables() {
+function computeMappingTables(header: Header): MappingTables {
     let table;
     const sizes = [];
     let offset = 0;
 
-    tables = {};
-
-    sizes[0] = mappingTables.computeSuperBlockSizes(header.flbw, header.flbh);
-    sizes[1] = mappingTables.computeSuperBlockSizes(header.fcbw, header.fcbh);
+    sizes[0] = computeSuperBlockSizes(header.flbw, header.flbh);
+    sizes[1] = computeSuperBlockSizes(header.fcbw, header.fcbh);
     sizes[2] = sizes[1];
-    tables.superBlockSizes = sizes[0].concat(sizes[1]).concat(sizes[2]);
+    const superBlockSizes = sizes[0].concat(sizes[1]).concat(sizes[2]);
 
-    table = mappingTables.computeBlockToSuperBlockTable(header.flbw, header.flbh, sizes[0], offset);
+    table = computeBlockToSuperBlockTable(header.flbw, header.flbh, sizes[0], offset);
 
     offset += sizes[0].length;
-    table.push.apply(table, mappingTables.computeBlockToSuperBlockTable(header.fcbw, header.fcbh, sizes[1], offset));
+    table.push(...computeBlockToSuperBlockTable(header.fcbw, header.fcbh, sizes[1], offset));
 
     offset += sizes[1].length;
-    table.push.apply(table, mappingTables.computeBlockToSuperBlockTable(header.fcbw, header.fcbh, sizes[2], offset));
+    table.push(...computeBlockToSuperBlockTable(header.fcbw, header.fcbh, sizes[2], offset));
 
-    tables.biToSbi = table;
+    const biToSbi = table;
 
     offset = 0;
-    table = mappingTables.computeRasterToCodedOrderMappingTable(
-        header.flbw,
-        header.flbh,
-        tables.biToSbi,
-        tables.superBlockSizes,
-        offset
-    );
+    table = computeRasterToCodedOrderMappingTable(header.flbw, header.flbh, biToSbi, superBlockSizes, offset);
 
     offset += header.nlbs;
-    table.push.apply(
-        table,
-        mappingTables.computeRasterToCodedOrderMappingTable(
-            header.fcbw,
-            header.fcbh,
-            tables.biToSbi,
-            tables.superBlockSizes,
-            offset
-        )
-    );
+    table.push(...computeRasterToCodedOrderMappingTable(header.fcbw, header.fcbh, biToSbi, superBlockSizes, offset));
 
     offset += header.ncbs;
-    table.push.apply(
-        table,
-        mappingTables.computeRasterToCodedOrderMappingTable(
-            header.fcbw,
-            header.fcbh,
-            tables.biToSbi,
-            tables.superBlockSizes,
-            offset
-        )
-    );
+    table.push(...computeRasterToCodedOrderMappingTable(header.fcbw, header.fcbh, biToSbi, superBlockSizes, offset));
 
-    tables.rasterToCodedOrder = table;
-    tables.codedToRasterOrder = util.arrayFlip(table);
+    const rasterToCodedOrder = table;
+    const codedToRasterOrder = arrayFlip(table);
 
-    table = mappingTables.computeMacroBlockMappingTables(
-        header.fmbw,
-        header.fmbh,
-        header.pf,
-        tables.rasterToCodedOrder
-    );
+    table = computeMacroBlockMappingTables(header.fmbw, header.fmbh, header.pf, rasterToCodedOrder);
 
-    tables.biToMbi = table[0];
-    tables.mbiToBi = table[1];
+    const biToMbi = table[0];
+    const mbiToBi = table[1];
+
+    return {
+        biToSbi,
+        biToMbi,
+        mbiToBi,
+        rasterToCodedOrder,
+        codedToRasterOrder,
+        superBlockSizes
+    };
 }
 
 export class Decoder {
+    public width: number;
+
+    public height: number;
+
+    public bitrate: number;
+
+    public comments: Header['comments'];
+
+    public vendor: string;
+
+    public framerate: number;
+
+    public pixelFormat: number;
+
+    public xOffset: number;
+
+    public yOffset: number;
+
+    private stream: LogicalStream;
+
+    private header: Header;
+
+    private mappingTables: MappingTables;
+
+    private colorPlaneOffsets: number[];
+
+    private goldReferenceFrame?: Frame;
+
+    private prevReferenceFrame?: Frame;
+
     /**
      *
      *
      * @method setInputStream
      * @param {Ogg.LogicalStream} stream Input stream.
      */
-    setInputStream(inputStream) {
-        stream = inputStream;
+    constructor(inputStream: LogicalStream) {
+        this.stream = inputStream;
+
+        this.header = new Header();
 
         // Decode all 3 theora headers
-        header.decodeIdentificationHeader(stream.nextPacket());
-        header.decodeCommentHeader(stream.nextPacket());
-        header.decodeSetupHeader(stream.nextPacket());
+        this.header.decodeIdentificationHeader(this.stream.nextPacket() as Packet);
+        this.header.decodeCommentHeader(this.stream.nextPacket() as Packet);
+        this.header.decodeSetupHeader(this.stream.nextPacket() as Packet);
 
         // Pre-compute all quantization matrices
-        header.computeQuantizationMatrices();
+        this.header.computeQuantizationMatrices();
 
         // Pre-compute all needed mapping tables
-        computeMappingTables();
+        this.mappingTables = computeMappingTables(this.header);
 
-        // Make the mapping tables available for all frames
-        Frame.setMappingTables(tables);
+        this.colorPlaneOffsets = [0, this.header.nlbs, this.header.nlbs + this.header.ncbs];
 
         /**
          * Frame width in pixel.
@@ -113,7 +133,7 @@ export class Decoder {
          * @property width
          * @type {Number}
          */
-        this.width = header.picw;
+        this.width = this.header.picw;
 
         /**
          * Frame height in pixel.
@@ -121,7 +141,7 @@ export class Decoder {
          * @property height
          * @type {Number}
          */
-        this.height = header.pich;
+        this.height = this.header.pich;
 
         /**
          * Bitrate of the video stream.
@@ -129,7 +149,7 @@ export class Decoder {
          * @property bitrate
          * @type {Number}
          */
-        this.bitrate = header.nombr;
+        this.bitrate = this.header.nombr;
 
         /**
          * Comments decoded from the comment header.
@@ -138,7 +158,7 @@ export class Decoder {
          * @property comments
          * @type {Object}
          */
-        this.comments = header.comments;
+        this.comments = this.header.comments;
 
         /**
          * Vendor name, set by the encoder.
@@ -146,7 +166,7 @@ export class Decoder {
          * @property vendor
          * @type {String}
          */
-        this.vendor = header.vendor;
+        this.vendor = this.header.vendor;
 
         /**
          * The framerate of the video.
@@ -154,7 +174,7 @@ export class Decoder {
          * @property framerate
          * @type {Number}
          */
-        this.framerate = header.frn / header.frd;
+        this.framerate = this.header.frn / this.header.frd;
 
         /**
          * Pixel format. The subsampling mode.
@@ -165,21 +185,21 @@ export class Decoder {
          * @property pixelFormat
          * @type {Number}
          */
-        this.pixelFormat = header.pf;
+        this.pixelFormat = this.header.pf;
 
         /**
          * X offset of the picture region
          *
          * @property xOffset
          */
-        this.xOffset = header.picx;
+        this.xOffset = this.header.picx;
 
         /**
          * Y offset of the picture region
          *
          * @property yOffset
          */
-        this.yOffset = header.picy;
+        this.yOffset = this.header.picy;
     }
 
     /**
@@ -188,22 +208,29 @@ export class Decoder {
      * @method nextFrame
      * @return {Object}
      */
-    nextFrame() {
-        const packet = stream.nextPacket();
-        let frame;
+    nextFrame(): Frame | false {
+        const packet = this.stream.nextPacket();
 
         if (!packet) {
             return false;
         }
 
-        frame = new Frame(packet, this.goldReferenceFrame, this.prefReferenceFrame);
+        const frame = new Frame(
+            this.header,
+            packet,
+            this.mappingTables,
+            this.colorPlaneOffsets,
+            this.goldReferenceFrame,
+            this.prevReferenceFrame
+        );
+
         frame.decode();
 
         if (frame.ftype === 0) {
             this.goldReferenceFrame = frame;
         }
 
-        this.prefReferenceFrame = frame;
+        this.prevReferenceFrame = frame;
 
         return frame;
     }

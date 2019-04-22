@@ -5,7 +5,7 @@ export interface HuffmanRunLength {
 
 export type HuffmanVector = number;
 
-export type HuffmanTable<T> = [ T[][], number[] ];
+export type HuffmanTable<T> = [T[][], number[]];
 
 export const LONG_RUN_LENGTH_HUFFMAN_TABLE: HuffmanTable<HuffmanRunLength> = [
     // Huffman codes
@@ -417,8 +417,8 @@ export const COLUMN_MAPPING_TABLE = [
 ];
 
 // Approximations of Sines and Cosines
-export const COSINES: [64277, 60547, 54491, 46341, 36410, 25080, 12785];
-export const SINES: [12785, 25080, 36410, 46341, 54491, 60547, 64277];
+export const COSINES = [64277, 60547, 54491, 46341, 36410, 25080, 12785];
+export const SINES = [12785, 25080, 36410, 46341, 54491, 60547, 64277];
 
 // Intra Predictor
 export const INTRA_PREDICTOR = [

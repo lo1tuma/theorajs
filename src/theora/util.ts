@@ -151,10 +151,8 @@ export function arrayFlip(a: number[]): number[] {
     let key;
     const b = [];
 
-    for (key in a) {
-        if (a.hasOwnProperty(key)) {
-            b[a[key]] = Number(key);
-        }
+    for (key of a.keys()) {
+        b[a[key]] = Number(key);
     }
 
     return b;
@@ -271,7 +269,7 @@ export class Bitstream {
             // Try to get new data
             try {
                 this.lookup |= this.packet.next8();
-            } catch (error) {
+            } catch (_) {
                 // No more new data exists, but there could be valid data in the lookup buffer
                 this.eos = true;
             }

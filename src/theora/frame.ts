@@ -19,6 +19,7 @@ import {
 } from './constants';
 import { Header } from './header';
 import { TheoraError } from './errors';
+import { MappingTables } from './decoder';
 
 export class Frame {
     public recy: number[][];
@@ -28,6 +29,8 @@ export class Frame {
     public reccr: number[][];
 
     public changedPixels: number[][];
+
+    public ftype?: number;
 
     private packet: Packet;
 
@@ -49,7 +52,7 @@ export class Frame {
 
     private referenceFrames: [null, [number[][]?, number[][]?, number[][]?], [number[][]?, number[][]?, number[][]?]];
 
-    private tables: any;
+    private tables: MappingTables;
 
     private colorPlaneOffsets: number[];
 
@@ -103,8 +106,6 @@ export class Frame {
 
     private uncodedBlocks: number[];
 
-    private ftype?: number;
-
     private nqis: number;
 
     /**
@@ -118,13 +119,20 @@ export class Frame {
      * @param {Theora.Frame} [goldReferenceFrame]
      * @param {Theora.Frame} [prevReferenceFrame]
      */
-    constructor(header: Header, packet: Packet, goldReferenceFrame: Frame, prevReferenceFrame: Frame) {
+    constructor(
+        header: Header,
+        packet: Packet,
+        tables: MappingTables,
+        colorPlaneOffsets: number[],
+        goldReferenceFrame?: Frame,
+        prevReferenceFrame?: Frame
+    ) {
         this.recy = [];
         this.reccb = [];
         this.reccr = [];
 
-        this.tables = {};
-        this.colorPlaneOffsets = [];
+        this.tables = tables;
+        this.colorPlaneOffsets = colorPlaneOffsets;
 
         this.packet = packet;
 
@@ -186,20 +194,6 @@ export class Frame {
          * @type {Array}
          */
         this.changedPixels = [];
-    }
-
-    /**
-     * Sets the mapping tables for all frames.
-     *
-     * @method setMappingTables
-     * @static
-     * @param {Object} mTables
-     */
-    public setMappingTables(mTables: any): void {
-        this.tables = mTables;
-
-        // Offsets for all color planes
-        this.colorPlaneOffsets = [0, this.header.nlbs, this.header.nlbs + this.header.ncbs];
     }
 
     /**
