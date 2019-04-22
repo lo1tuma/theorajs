@@ -27,7 +27,7 @@ test('provides the correct meta information about the video stream', async (t) =
 });
 
 test('decodes all frames without errors', async (t) => {
-    const frames = await decodeAllFrames(simpleOggFile);
+    const frameCount = await decodeAllFrames(simpleOggFile);
 
-    t.is(frames.length, 120);
+    t.is(frameCount, 120);
 });
