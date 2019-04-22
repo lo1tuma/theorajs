@@ -1,5 +1,5 @@
 export class Packet {
-    private data: ReadonlyArray<number>;
+    public data: ReadonlyArray<number>;
 
     private offset: number;
 

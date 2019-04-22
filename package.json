@@ -16,6 +16,7 @@
         "LICENSE"
     ],
     "devDependencies": {
+        "@types/node": "11.13.6",
         "@typescript-eslint/eslint-plugin": "1.6.0",
         "@typescript-eslint/parser": "1.6.0",
         "ava": "1.4.1",
@@ -27,10 +28,12 @@
     },
     "scripts": {
         "lint": "xo",
-        "build": "tsc",
+        "build": "tsc && cp -R test/fixtures build/test/fixtures",
         "pretest:unit": "pnpm run build",
         "test:unit": "ava build/test/unit/**/*.test.js",
-        "test": "pnpm run lint && pnpm run test:unit"
+        "pretest:integration": "pnpm run build",
+        "test:integration": "ava build/test/integration/**/*.test.js",
+        "test": "pnpm run lint && pnpm run test:unit && pnpm run test:integration"
     },
     "xo": {
         "space": 4,
@@ -65,5 +68,8 @@
             ],
             "ava/no-ignored-test-files": "off"
         }
+    },
+    "ava": {
+        "snapshotDir": "test/integration/snapshots"
     }
 }
