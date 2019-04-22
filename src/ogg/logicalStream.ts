@@ -12,9 +12,11 @@ export class LogicalStream {
 
     private segmentOffset: number;
 
-    //    Private initialPacket: false | Packet;
-
     private lastPageNumber: number;
+
+    private firstPacket?: false | Packet;
+
+    private rereadFirstPacket: boolean;
 
     /**
      * The logical stream is a specific demultiplexed stream of an ogg container.
@@ -45,11 +47,17 @@ export class LogicalStream {
 
         this.currentPage = firstPage;
         this.segmentOffset = 0;
-        // TODO: reading the initialPacket here and resetting the segment offset causes a bug when the first packet spans multiple pages, since we don’t reset currentPage
-        //        this.initialPacket = this.nextPacket();
 
-        // Reset offset, so we can re-read the initial packet with nextPacket()
-        //       this.segmentOffset = 0;
+        this.rereadFirstPacket = false;
+    }
+
+    getFirstPacket(): false | Packet {
+        if (this.firstPacket === undefined) {
+            this.firstPacket = this.nextPacket();
+            this.rereadFirstPacket = true;
+        }
+
+        return this.firstPacket;
     }
 
     /**
@@ -59,6 +67,11 @@ export class LogicalStream {
      * @return {Ogg.Packet}
      */
     nextPacket(): false | Packet {
+        if (this.rereadFirstPacket && this.firstPacket !== undefined) {
+            this.rereadFirstPacket = false;
+            return this.firstPacket;
+        }
+
         const packet = new Packet();
         let segment: false | ReadonlyArray<number>;
 
@@ -79,6 +92,10 @@ export class LogicalStream {
 
         // Add last segment
         packet.addSegment(segment);
+
+        if (this.firstPacket === undefined) {
+            this.firstPacket = packet;
+        }
 
         return packet;
     }
