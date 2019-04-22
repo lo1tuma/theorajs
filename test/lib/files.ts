@@ -2,7 +2,6 @@ import { promises as fs } from 'fs';
 import { TransportStream } from '../../src/ogg/transportStream';
 import { ByteStream } from '../../src/stream/byteStream';
 import { Decoder } from '../../src/theora/decoder';
-import { Frame } from '../../src/theora/frame';
 import { isTheora } from '../../src/theora/header';
 import { LogicalStream } from '../../src/ogg/logicalStream';
 import { Packet } from '../../src/ogg/packet';
@@ -20,8 +19,7 @@ function findTheoraStream(streams: LogicalStream[]): LogicalStream | undefined {
     return streams.find((stream) => isTheora(stream.getFirstPacket() as Packet));
 }
 
-export async function decodeAllFrames(file: string): Promise<number> {
-    const byteStream = await readOggFile(file);
+export async function decodeAllFrames(byteStream: ByteStream): Promise<number> {
     const transportStream = new TransportStream(byteStream);
 
     const videoStream = findTheoraStream(transportStream.findLogicalStreams());
@@ -40,4 +38,9 @@ export async function decodeAllFrames(file: string): Promise<number> {
     }
 
     return frameCount;
+}
+
+export async function decodeAllFramesForFile(file: string): Promise<number> {
+    const byteStream = await readOggFile(file);
+    return decodeAllFrames(byteStream);
 }

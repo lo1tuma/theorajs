@@ -33,7 +33,9 @@
         "test:unit": "ava build/test/unit/**/*.test.js",
         "pretest:integration": "pnpm run build",
         "test:integration": "ava build/test/integration/**/*.test.js",
-        "test": "pnpm run lint && pnpm run test:unit && pnpm run test:integration"
+        "pretest:bench": "pnpm run build",
+        "test:bench": "ava build/test/benchmarks/**/*.bench.js --verbose",
+        "test": "pnpm run lint && pnpm run test:unit && pnpm run test:integration && pnpm run test:bench"
     },
     "xo": {
         "space": 4,

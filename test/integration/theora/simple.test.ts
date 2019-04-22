@@ -1,9 +1,8 @@
 import path from 'path';
 import test from 'ava';
 import { TransportStream } from '../../../src/ogg/transportStream';
-import { ByteStream } from '../../../src/stream/byteStream';
 import { Decoder } from '../../../src/theora/decoder';
-import { readOggFile, decodeAllFrames } from '../../lib/files';
+import { readOggFile, decodeAllFramesForFile } from '../../lib/files';
 
 const simpleOggFile = path.resolve(__dirname, '../../fixtures/320x240.ogg');
 
@@ -11,7 +10,7 @@ test('provides the correct meta information about the video stream', async (t) =
     const byteStream = await readOggFile(simpleOggFile);
     const transportStream = new TransportStream(byteStream);
 
-    const [ videoStream ] = transportStream.findLogicalStreams();
+    const [videoStream] = transportStream.findLogicalStreams();
 
     const decoder = new Decoder(videoStream);
 
@@ -27,7 +26,7 @@ test('provides the correct meta information about the video stream', async (t) =
 });
 
 test('decodes all frames without errors', async (t) => {
-    const frameCount = await decodeAllFrames(simpleOggFile);
+    const frameCount = await decodeAllFramesForFile(simpleOggFile);
 
     t.is(frameCount, 120);
 });
