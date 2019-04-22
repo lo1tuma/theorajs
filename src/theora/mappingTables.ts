@@ -8,7 +8,7 @@ import { ROW_MAPPING_TABLE, COLUMN_MAPPING_TABLE } from './constants';
  * @param {Number} height Height of the color plane in blocks.
  * @return {Array} Array of super block sizes.
  */
-export function computeSuperBlockSizes(width, height) {
+export function computeSuperBlockSizes(width: number, height: number): number[] {
     // Sizes of all super blocks
     const sizes = [];
 
@@ -83,7 +83,12 @@ export function computeSuperBlockSizes(width, height) {
  * @param {Number} [offset=0] Offset, to adjust the super block indicies by this specific value.
  * @return {Array} Mapping table from block index to super block index.
  */
-export function computeBlockToSuperBlockTable(width, height, sizes, offset) {
+export function computeBlockToSuperBlockTable(
+    width: number,
+    height: number,
+    sizes: number[],
+    offset: number
+): number[] {
     // Block to super block mapping table
     const table = [];
 
@@ -128,7 +133,13 @@ export function computeBlockToSuperBlockTable(width, height, sizes, offset) {
  * @param {Number} [offset=0] Offset, to adjust the coded block indicies by this specific value.
  * @return {Array} Mapping table from block index in raster order to block index in coded order.
  */
-export function computeRasterToCodedOrderMappingTable(width, height, mappingTable, sizes, offset) {
+export function computeRasterToCodedOrderMappingTable(
+    width: number,
+    height: number,
+    mappingTable: number[],
+    sizes: number[],
+    offset: number
+): number[] {
     // Mapping table
     const table = [];
 
@@ -222,8 +233,8 @@ export function computeRasterToCodedOrderMappingTable(width, height, mappingTabl
 
         // Determine the absolute position of row and col
         // from the current block in the color plane
-        blockRow = row + constants.ROW_MAPPING_TABLE[superBlockWidth - 1][superBlockHeight - 1][relativeBi];
-        blockCol = col + constants.COLUMN_MAPPING_TABLE[superBlockWidth - 1][superBlockHeight - 1][relativeBi];
+        blockRow = row + ROW_MAPPING_TABLE[superBlockWidth - 1][superBlockHeight - 1][relativeBi];
+        blockCol = col + COLUMN_MAPPING_TABLE[superBlockWidth - 1][superBlockHeight - 1][relativeBi];
 
         // Map the raster index to coded order bi
         table[blockRow * width + blockCol] = bi + offset;
@@ -243,9 +254,14 @@ export function computeRasterToCodedOrderMappingTable(width, height, mappingTabl
  * @return {Array} Element 0 will be the block index to macro block index table. Element 1 will be the macro
  *					block index to block index table.
  */
-export function computeMacroBlockMappingTables(frameWidth, frameHeight, pixelFormat, rasterToCodedOrder) {
+export function computeMacroBlockMappingTables(
+    frameWidth: number,
+    frameHeight: number,
+    pixelFormat: number,
+    rasterToCodedOrder: number[]
+): [number[], number[][]] {
     // The mapping tables
-    const tables = [];
+    const tables: [number[], number[][]] = [[], []];
 
     // The index of the current block in coded order
     let bi = 0;
@@ -286,9 +302,6 @@ export function computeMacroBlockMappingTables(frameWidth, frameHeight, pixelFor
     // upper-left 1, upper-right 2 and lower-right 3.
     // To map the coded block indicies to the coded macro block indicies we will
     // iterate through the macro blocks in raster order.
-
-    tables[0] = [];
-    tables[1] = [];
 
     // For all color planes
     for (pli = 0; pli < 3; pli += 1) {
