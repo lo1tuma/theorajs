@@ -43,12 +43,6 @@ export class TransportStream {
         // Unread last page, because it was't a BoS page
         this.byteStream.skip(-(page.headerLength + page.bodyLength));
 
-        // Override this method, because we have to do this work only once
-        // to-do: check, if works... ?!
-        TransportStream.prototype.findLogicalStreams = function() {
-            return this.logicalStreams;
-        };
-
         return this.logicalStreams;
     }
 
