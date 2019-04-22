@@ -12,7 +12,7 @@ export class LogicalStream {
 
     private segmentOffset: number;
 
-    private initialPacket: false | Packet;
+    //    Private initialPacket: false | Packet;
 
     private lastPageNumber: number;
 
@@ -46,10 +46,10 @@ export class LogicalStream {
         this.currentPage = firstPage;
         this.segmentOffset = 0;
         // TODO: reading the initialPacket here and resetting the segment offset causes a bug when the first packet spans multiple pages, since we don’t reset currentPage
-        this.initialPacket = this.nextPacket();
+        //        this.initialPacket = this.nextPacket();
 
         // Reset offset, so we can re-read the initial packet with nextPacket()
-        this.segmentOffset = 0;
+        //       this.segmentOffset = 0;
     }
 
     /**

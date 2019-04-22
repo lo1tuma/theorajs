@@ -1,6 +1,6 @@
-import test from 'ava';
 import { promises as fs } from 'fs';
 import path from 'path';
+import test from 'ava';
 import { TransportStream } from '../../../src/ogg/transportStream';
 import { ByteStream } from '../../../src/stream/byteStream';
 
@@ -28,7 +28,7 @@ test('processes the first logical stream correctly', async (t) => {
     const transportStream = new TransportStream(byteStream);
 
     const logicalStreams = transportStream.findLogicalStreams();
-    const [ first ] = logicalStreams;
+    const [first] = logicalStreams;
 
     const packets = [];
     let packet = first.nextPacket();
@@ -40,5 +40,5 @@ test('processes the first logical stream correctly', async (t) => {
         packet = first.nextPacket();
     }
 
-    t.is(packets.length, 123)
+    t.is(packets.length, 123);
 });

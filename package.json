@@ -52,7 +52,7 @@
                 "error",
                 4,
                 {
-                    "SwitchCase": 0
+                    "SwitchCase": 1
                 }
             ],
             "@typescript-eslint/member-naming": "off",

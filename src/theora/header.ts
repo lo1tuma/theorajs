@@ -1,25 +1,6 @@
+import { Packet } from '../ogg/packet';
 import { ilog, toInt, Bitstream } from './util';
-
-// A 64-element array of scale values for AC coefficients
-const acScale = [];
-
-// A 64-element array of scale values for DC coefficients
-const dcScale = [];
-
-// The number of base matrices
-let nbms = 0;
-
-// A nbms*64 array containg all base matrices
-const bms = [];
-
-// A 2*3 array containing the number of quant ranges for a given qti and pli
-const nqrs = [];
-
-// A 2*3*63 array of the sizes of each quant range for a given qti and pli
-const qrsizes = [];
-
-// A 2*3*64 array of the bmi’s used for each quant range for a given qti and pli
-const qrbmis = [];
+import { TheoraError } from './errors';
 
 /**
  * Checks if the ogg packet is a theora header.
@@ -28,7 +9,7 @@ const qrbmis = [];
  * @param {Ogg.Packet} packet
  * @return {Boolean}
  */
-export function isTheora(packet) {
+export function isTheora(packet: Packet): boolean {
     // Bytes 1-6 have to be 'Theora'
     return (
         packet.get8(1) === 0x74 &&
@@ -48,155 +29,13 @@ export function isTheora(packet) {
  * @param {Ogg.Packet}
  * @return {Number} Length
  */
-function decodeCommentLength(packet) {
+function decodeCommentLength(packet: Packet): number {
     const len0 = packet.next8();
     const len1 = packet.next8();
     const len2 = packet.next8();
     const len3 = packet.next8();
 
     return len0 + (len1 << 8) + (len2 << 16) + (len3 << 24);
-}
-
-/**
- * Quantization Parameters Decode
- *
- * @method decodeQuantizationParameters
- * @private
- * @param {util.BitStream} reader
- */
-function decodeQuantizationParameters(reader) {
-    // A quantization type index
-    let qti;
-
-    // A quantization type index
-    let qtj;
-
-    // A color plane index
-    let pli;
-
-    // A color plane index
-    let plj;
-
-    // The quantization index
-    let qi;
-
-    // The base matrix index
-    let bmi;
-
-    // A base matrix index
-    let bmj;
-
-    // The quant range index
-    let qri;
-
-    // The size of fields to read
-    let nbits;
-
-    // Flag that indicates a new set of quant ranges will be defined
-    let newqr;
-
-    // Flag that indicates the quant ranges to copy
-    let rpqr;
-
-    // Get the acscale values
-    nbits = reader.nextBits(4) + 1;
-    for (qi = 0; qi < 64; qi += 1) {
-        acScale[qi] = reader.nextUBits(nbits);
-    }
-
-    // Get the dcscale values
-    nbits = reader.nextBits(4) + 1;
-    for (qi = 0; qi < 64; qi += 1) {
-        dcScale[qi] = reader.nextUBits(nbits);
-    }
-
-    // Get the number of base matrices
-    nbms = reader.nextBits(9) + 1;
-    if (nbms > 384) {
-        throw {
-            name: 'TheoraError',
-            message: 'Number of base matrices is too high.'
-        };
-    }
-
-    // Get the base matrices
-    for (bmi = 0; bmi < nbms; bmi += 1) {
-        bms[bmi] = [];
-        for (bmj = 0; bmj < 64; bmj += 1) {
-            bms[bmi][bmj] = reader.nextBits(8);
-        }
-    }
-
-    for (qti = 0; qti < 2; qti += 1) {
-        nqrs[qti] = [];
-        qrsizes[qti] = [];
-        qrbmis[qti] = [];
-
-        for (pli = 0; pli < 3; pli += 1) {
-            nqrs[qti][pli] = [];
-            qrsizes[qti][pli] = [];
-            qrbmis[qti][pli] = [];
-
-            // Init qrsizes and qrbmis
-            for (qri = 0; qri < 64; qri += 1) {
-                qrsizes[qti][pli][qri] = 0;
-                qrbmis[qti][pli][qri] = 0;
-            }
-
-            newqr = 1;
-            if (qti > 0 || pli > 0) {
-                newqr = reader.nextBits(1);
-            }
-
-            if (newqr === 0) {
-                // Copying a previously defined set of quant ranges
-                rpqr = 0;
-                if (qti > 0) {
-                    rpqr = reader.nextBits(1);
-                }
-
-                if (rpqr === 1) {
-                    qtj = qti - 1;
-                    plj = pli;
-                } else {
-                    qtj = util.toInt((3 * qti + pli - 1) / 3);
-                    plj = (pli + 2) % 3;
-                }
-
-                nqrs[qti][pli] = nqrs[qtj][plj];
-                qrsizes[qti][pli] = qrsizes[qtj][plj];
-                qrbmis[qti][pli] = qrbmis[qtj][plj];
-            } else {
-                // Defining a new set of quant ranges
-                qri = 0;
-                qi = 0;
-
-                qrbmis[qti][pli][qri] = reader.nextBits(ilog(nbms - 1));
-                if (qrbmis[qti][pli][qri] >= nbms) {
-                    throw {
-                        name: 'TheoraError',
-                        message: 'Stream is undecodeable.'
-                    };
-                }
-
-                while (qi < 63) {
-                    qrsizes[qti][pli][qri] = reader.nextBits(ilog(62 - qi)) + 1;
-                    qi += qrsizes[qti][pli][qri];
-                    qri += 1;
-                    qrbmis[qti][pli][qri] = reader.nextBits(ilog(nbms - 1));
-                }
-
-                if (qi > 63) {
-                    throw {
-                        name: 'TheoraError',
-                        message: 'Stream is undecodeable.'
-                    };
-                }
-
-                nqrs[qti][pli] = qri;
-            }
-        }
-    }
 }
 
 /**
@@ -207,17 +46,15 @@ function decodeQuantizationParameters(reader) {
  * @param {BitStream} reader
  * @return {Array} A 64-element array of loop filter limit values
  */
-function decodeLFLTable(reader) {
-    // The size of values being read in the current table
-    let nbits;
-
+function decodeLFLTable(reader: Bitstream): number[] {
     // The quantization index
     let qi;
 
     // Return value
     const lflims = [];
 
-    nbits = reader.nextBits(3);
+    // The size of values being read in the current table
+    const nbits = reader.nextBits(3);
 
     for (qi = 0; qi < 64; qi += 1) {
         // Add nbit-bit value
@@ -225,83 +62,6 @@ function decodeLFLTable(reader) {
     }
 
     return lflims;
-}
-
-/**
- * Computing a Quantization Matrix
- *
- * @method computeQuantizationMatrix
- * @param {Number} qti Quantization type index
- * @param {Number} pli Color plane index
- * @param {Number} qi Quantization index
- * @return {Array} 64-element array of quantization values for each DCT coefficient in natural order
- */
-export function computeQuantizationMatrix(qti, pli, qi) {
-    // Quantization values for each DCT coefficient
-    const qmat = [];
-
-    // The quant range index
-    let qri;
-
-    // The left end-point of the qi range
-    let qiStart = 0;
-
-    // The right end-point of the qi range
-    let qiEnd = 0;
-
-    // Base matrix index
-    let bmi;
-
-    // Base matrix index
-    let bmj;
-
-    // Minimum quantization value allowed for the current coefficient
-    let qmin;
-
-    // Current scale value
-    let qscale;
-
-    // The DCT coefficient index
-    let ci;
-
-    // Current value of the interpolated base matrix
-    let bm;
-
-    // Find qri where qi is >= qiStart and qi <= qiEnd
-    for (qri = 0; qri < 63; qri += 1) {
-        qiEnd += qrsizes[qti][pli][qri];
-        if (qi <= qiEnd && qiStart <= qi) {
-            break;
-        }
-
-        qiStart = qiEnd;
-    }
-
-    bmi = qrbmis[qti][pli][qri];
-    bmj = qrbmis[qti][pli][qri + 1];
-    for (ci = 0; ci < 64; ci += 1) {
-        bm = toInt(
-            (2 * (qiEnd - qi) * bms[bmi][ci] + 2 * (qi - qiStart) * bms[bmj][ci] + qrsizes[qti][pli][qri]) /
-                (2 * qrsizes[qti][pli][qri])
-        );
-
-        qmin = 16;
-        if (ci > 0 && qti === 0) {
-            qmin = 8;
-        } else if (ci === 0 && qti === 1) {
-            qmin = 32;
-        }
-
-        if (ci === 0) {
-            qscale = dcScale[qi];
-        } else {
-            qscale = acScale[qi];
-        }
-
-        qmat[ci] = Math.max(qmin, Math.min(toInt((qscale * bm) / 100) * 4, 4096));
-    }
-
-    return qmat;
 }
 
 /**
@@ -315,21 +75,25 @@ export function computeQuantizationMatrix(qti, pli, qi) {
  * @param {Number} Huffman table index
  * @param {Number} numberOfHuffmanCodeds Current number of Huffman codes
  */
-function buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) {
-    // Flag that indicates if the current node of the tree being decoded is a leaf node
-    let isLeaf;
-
+function buildSubtree(
+    hbits: string,
+    reader: Bitstream,
+    hts: number[][][],
+    hti: number,
+    numberOfHuffmanCodes: number
+): undefined | number {
     // A single DCT token value
     let token;
 
     if (hbits.length > 32) {
-        throw { name: 'TheoraError', message: 'Stream undecodeable.' };
+        throw new TheoraError('Stream undecodeable.');
     }
 
-    isLeaf = reader.nextBits(1);
+    // Flag that indicates if the current node of the tree being decoded is a leaf node
+    const isLeaf = reader.nextBits(1);
     if (isLeaf === 1) {
         if (numberOfHuffmanCodes === 32) {
-            throw { name: 'TheoraError', message: 'Stream undecodeable.' };
+            throw new TheoraError('Stream undecodeable.');
         }
 
         token = reader.nextBits(5);
@@ -339,12 +103,12 @@ function buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) {
     }
 
     hbits += '0';
-    numberOfHuffmanCodes = buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes);
+    numberOfHuffmanCodes = buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) as number;
 
     // Remove last char
     hbits = hbits.slice(0, -1);
     hbits += '1';
-    numberOfHuffmanCodes = buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes);
+    numberOfHuffmanCodes = buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) as number;
 
     // Remove last char
     hbits = hbits.slice(0, -1);
@@ -358,9 +122,9 @@ function buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) {
  * @param {BitStream} reader
  * @return {Array} 80-element array of Huffman tables with up to 32 entries each
  */
-function decodeHuffmanTables(reader) {
+function decodeHuffmanTables(reader: Bitstream): number[][][] {
     // Return value
-    const hts = [];
+    const hts: number[][][] = [];
 
     // Huffman token index
     let hti;
@@ -380,25 +144,171 @@ function decodeHuffmanTables(reader) {
 }
 
 export class Header {
+    public vmaj: number;
+
+    public vmin: number;
+
+    public vrev: number;
+
+    public fmbw: number;
+
+    public fmbh: number;
+
+    public picw: number;
+
+    public pich: number;
+
+    public picx: number;
+
+    public picy: number;
+
+    public frn: number;
+
+    public frd: number;
+
+    public parn: number;
+
+    public pard: number;
+
+    public cs: number;
+
+    public nombr: number;
+
+    public qual: number;
+
+    public kfgshift: number;
+
+    public pf: number;
+
+    public nmbs: number;
+
+    public nlbs: number;
+
+    public flbw: number;
+
+    public flbh: number;
+
+    /**
+     * The number of super blocks
+     *
+     * @property nsbs
+     */
+    public nsbs: number;
+
+    /**
+     * The number of blocks
+     *
+     * @property nbs
+     */
+    public nbs: number;
+
+    /**
+     * The number of blocks in each chroma plane
+     *
+     * @property ncbs
+     */
+    public ncbs: number;
+
+    /**
+     * Frame width of each chroma plane in blocks
+     *
+     * @property fcbw
+     */
+    public fcbw: number;
+
+    /**
+     * Frame height of each chroma plane in blocks
+     *
+     * @property fmbh
+     */
+    public fcbh: number;
+
+    public vendor: string;
+
+    public comments: { [fieldName: string]: string };
+
+    public lflims: number[];
+
+    public hts: number[][][];
+
+    public qmats: number[][][][];
+
+    // A 64-element array of scale values for AC coefficients
+    private acScale: number[];
+
+    // A 64-element array of scale values for DC coefficients
+    private dcScale: number[];
+
+    // The number of base matrices
+    private nbms: number;
+
+    // A nbms*64 array containg all base matrices
+    private bms: number[][];
+
+    // A 2*3 array containing the number of quant ranges for a given qti and pli
+    private nqrs: [[number, number, number], [number, number, number]];
+
+    // A 2*3*63 array of the sizes of each quant range for a given qti and pli
+    private qrsizes: number[][][];
+
+    // A 2*3*64 array of the bmi’s used for each quant range for a given qti and pli
+    private qrbmis: number[][][];
+
+    constructor() {
+        this.vmaj = 0;
+        this.vmin = 0;
+        this.vrev = 0;
+        this.fmbw = 0;
+        this.fmbh = 0;
+        this.picw = 0;
+        this.pich = 0;
+        this.picx = 0;
+        this.picy = 0;
+        this.frn = 0;
+        this.frd = 0;
+        this.parn = 0;
+        this.pard = 0;
+        this.cs = 0;
+        this.nombr = 0;
+        this.qual = 0;
+        this.kfgshift = 0;
+        this.pf = 0;
+        this.nmbs = 0;
+        this.nlbs = 0;
+        this.flbw = 0;
+        this.flbh = 0;
+        this.nsbs = 0;
+        this.nbs = 0;
+        this.ncbs = 0;
+        this.fcbw = 0;
+        this.fcbh = 0;
+        this.vendor = '';
+        this.comments = {};
+        this.lflims = [];
+        this.hts = [];
+        this.qmats = [];
+        this.acScale = [];
+        this.dcScale = [];
+        this.nbms = 0;
+        this.bms = [];
+        this.nqrs = [[0, 0, 0], [0, 0, 0]];
+        this.qrsizes = [];
+        this.qrbmis = [];
+    }
+
     /**
      * Decodes the identification header.
      *
      * @method decodeIdentificationHeader
      * @param {Ogg.Packet} packet
      */
-    decodeIdentificationHeader(packet) {
+    decodeIdentificationHeader(packet: Packet): void {
         // The current header type
         const headerType = packet.get8(0);
 
-        // Temporary data for bit unpacking
-        let data;
-
         // Check the headerType and the theora signature
         if (headerType !== 0x80 && !isTheora(packet)) {
-            throw {
-                name: 'TheoraError',
-                message: 'Invalid identification header.'
-            };
+            throw new TheoraError('Invalid identification header.');
         }
 
         // Skip headerType and "theora" string (7 bytes)
@@ -509,8 +419,9 @@ export class Header {
          */
         this.nombr = packet.next24();
 
+        // Temporary data for bit unpacking
         // Reading 6 bit quality hint, 5 bit kfgshift, 2 bit pixel format und 3 reserved bits
-        data = packet.next16();
+        const data = packet.next16();
 
         /**
          * The quality hint
@@ -535,7 +446,7 @@ export class Header {
 
         // Reserved bits must be zero or we haven’t a valid stream
         if ((data & 0x07) !== 0) {
-            throw { name: 'TheoraError', message: 'Invalid theora header' };
+            throw new TheoraError('Invalid theora header');
         }
 
         /**
@@ -571,85 +482,47 @@ export class Header {
         // 2 = 4:2:2 subsampling
         // 3 = 4:4:4 subsampling
         switch (this.pf) {
-        case 0:
-            /**
-                 * The number of super blocks
-                 *
-                 * @property nsbs
-                 */
-            this.nsbs =
+            case 0:
+                this.nsbs =
                     toInt((this.fmbw + 1) / 2) * toInt((this.fmbh + 1) / 2) +
                     2 * toInt((this.fmbw + 3) / 4) * toInt((this.fmbh + 3) / 4);
 
-            /**
-                 * The number of blocks
-                 *
-                 * @property nbs
-                 */
-            this.nbs = 6 * this.fmbw * this.fmbh;
+                this.nbs = 6 * this.fmbw * this.fmbh;
 
-            /**
-                 * The number of blocks in each chroma plane
-                 *
-                 * @property ncbs
-                 */
-            this.ncbs = this.fmbw * this.fmbh;
+                this.ncbs = this.fmbw * this.fmbh;
 
-            /**
-                 * Frame width of each chroma plane in blocks
-                 *
-                 * @property fcbw
-                 */
-            this.fcbw = this.fmbw;
+                this.fcbw = this.fmbw;
 
-            /**
-                 * Frame height of each chroma plane in blocks
-                 *
-                 * @property fmbh
-                 */
-            this.fcbh = this.fmbh;
+                this.fcbh = this.fmbh;
 
-            break;
-        case 2:
-            // The number of super blocks
-            this.nsbs =
+                break;
+            case 2:
+                this.nsbs =
                     toInt((this.fmbw + 1) / 2) * toInt((this.fmbh + 1) / 2) +
                     2 * toInt((this.fmbw + 3) / 4) * toInt((this.fmbh + 1) / 2);
-            // The number of blocks
-            this.nbs = 8 * this.fmbw * this.fmbh;
+                this.nbs = 8 * this.fmbw * this.fmbh;
 
-            // The number of blocks in each chroma plane
-            this.ncbs = 2 * this.fmbw * this.fmbh;
+                this.ncbs = 2 * this.fmbw * this.fmbh;
 
-            // Frame width of each chroma plane in blocks
-            this.fcbw = this.fmbw;
+                this.fcbw = this.fmbw;
 
-            // Frame height of each chroma plane in blocks
-            this.fcbh = 2 * this.fmbh;
+                this.fcbh = 2 * this.fmbh;
 
-            break;
-        case 3:
-            // The number of super blocks
-            this.nsbs = 3 * toInt((this.fmbw + 1) / 2) * toInt((this.fmbh + 1) / 2);
+                break;
+            case 3:
+                this.nsbs = 3 * toInt((this.fmbw + 1) / 2) * toInt((this.fmbh + 1) / 2);
 
-            // The number of blocks
-            this.nbs = 12 * this.fmbw * this.fmbh;
+                this.nbs = 12 * this.fmbw * this.fmbh;
 
-            // The number of blocks in each chroma plane
-            this.ncbs = 4 * this.fmbw * this.fmbh;
+                this.ncbs = 4 * this.fmbw * this.fmbh;
 
-            // Frame width of each chroma plane in blocks
-            this.fcbw = 2 * this.fmbw;
+                this.fcbw = 2 * this.fmbw;
 
-            // Frame height of each chroma plane in blocks
-            this.fcbh = 2 * this.fmbh;
+                this.fcbh = 2 * this.fmbh;
 
-            break;
-        default:
-            throw {
-                name: 'TheoraError',
-                message: 'Unkown pixel format.'
-            };
+                break;
+            default:
+                throw new TheoraError('Unknown pixel format.');
         }
     }
 
@@ -659,15 +532,12 @@ export class Header {
      * @method decodeCommentHeader
      * @param {Ogg.Packet} packet
      */
-    decodeCommentHeader(packet) {
+    decodeCommentHeader(packet: Packet): void {
         // The current header type
         const headerType = packet.get8(0);
 
         // Number of characters to read
         let len;
-
-        // Number of comments
-        let ncomments;
 
         // Current comment
         let comment;
@@ -679,10 +549,7 @@ export class Header {
 
         // Check the headerType and the theora signature
         if (headerType !== 0x81 && !isTheora(packet)) {
-            throw {
-                name: 'TheoraError',
-                message: 'Invalid comment header.'
-            };
+            throw new TheoraError('Invalid comment header.');
         }
 
         // Skip headerType and "theora" string (7 bytes)
@@ -703,7 +570,7 @@ export class Header {
         }
 
         // Get the number of user comments
-        ncomments = decodeCommentLength(packet);
+        const ncomments = decodeCommentLength(packet);
 
         /**
          * Key <-> value map of all comments
@@ -738,22 +605,20 @@ export class Header {
      * @method decodeSetupHeader
      * @param {Ogg.Packet} packet
      */
-    decodeSetupHeader(packet) {
+    decodeSetupHeader(packet: Packet): void {
         // The header type
         const headerType = packet.get8(0);
 
-        // Bitstream reader
-        let reader;
-
         // Check the headerType and the theora signature
         if (headerType !== 0x82 && !isTheora(packet)) {
-            throw { name: 'TheoraError', message: 'Invalid setup header.' };
+            throw new TheoraError('Invalid setup header.');
         }
 
         // Skip headerType and "theora" string (7 bytes)
         packet.seek(7);
 
-        reader = new Bitstream(packet, 7);
+        // Bitstream reader
+        const reader = new Bitstream(packet, 7);
 
         /**
          * A 64-element array of loop filter limit values
@@ -763,7 +628,7 @@ export class Header {
          */
         this.lflims = decodeLFLTable(reader);
 
-        decodeQuantizationParameters(reader);
+        this.decodeQuantizationParameters(reader);
 
         /**
          * An 80-element array of Huffman tables with up to 32 entries each.
@@ -779,7 +644,7 @@ export class Header {
      *
      * @method computeQuantizationMatrices
      */
-    computeQuantizationMatrices() {
+    computeQuantizationMatrices(): void {
         let qti;
         let pli;
         let qi;
@@ -796,9 +661,215 @@ export class Header {
             for (pli = 0; pli < 3; pli += 1) {
                 this.qmats[qti][pli] = [];
                 for (qi = 0; qi < 64; qi += 1) {
-                    this.qmats[qti][pli][qi] = computeQuantizationMatrix(qti, pli, qi);
+                    this.qmats[qti][pli][qi] = this.computeQuantizationMatrix(qti, pli, qi);
                 }
             }
         }
+    }
+
+    /**
+     * Quantization Parameters Decode
+     *
+     * @method decodeQuantizationParameters
+     * @private
+     * @param {util.BitStream} reader
+     */
+    private decodeQuantizationParameters(reader: Bitstream): void {
+        // A quantization type index
+        let qti;
+
+        // A quantization type index
+        let qtj;
+
+        // A color plane index
+        let pli;
+
+        // A color plane index
+        let plj;
+
+        // The quantization index
+        let qi;
+
+        // The base matrix index
+        let bmi;
+
+        // A base matrix index
+        let bmj;
+
+        // The quant range index
+        let qri;
+
+        // The size of fields to read
+        let nbits;
+
+        // Flag that indicates a new set of quant ranges will be defined
+        let newqr;
+
+        // Flag that indicates the quant ranges to copy
+        let rpqr;
+
+        // Get the acscale values
+        nbits = reader.nextBits(4) + 1;
+        for (qi = 0; qi < 64; qi += 1) {
+            this.acScale[qi] = reader.nextUBits(nbits);
+        }
+
+        // Get the dcscale values
+        nbits = reader.nextBits(4) + 1;
+        for (qi = 0; qi < 64; qi += 1) {
+            this.dcScale[qi] = reader.nextUBits(nbits);
+        }
+
+        // Get the number of base matrices
+        this.nbms = reader.nextBits(9) + 1;
+        if (this.nbms > 384) {
+            throw new TheoraError('Number of base matrices is too high.');
+        }
+
+        // Get the base matrices
+        for (bmi = 0; bmi < this.nbms; bmi += 1) {
+            this.bms[bmi] = [];
+            for (bmj = 0; bmj < 64; bmj += 1) {
+                this.bms[bmi][bmj] = reader.nextBits(8);
+            }
+        }
+
+        for (qti = 0; qti < 2; qti += 1) {
+            this.qrsizes[qti] = [];
+            this.qrbmis[qti] = [];
+
+            for (pli = 0; pli < 3; pli += 1) {
+                this.qrsizes[qti][pli] = [];
+                this.qrbmis[qti][pli] = [];
+
+                // Init qrsizes and qrbmis
+                for (qri = 0; qri < 64; qri += 1) {
+                    this.qrsizes[qti][pli][qri] = 0;
+                    this.qrbmis[qti][pli][qri] = 0;
+                }
+
+                newqr = 1;
+                if (qti > 0 || pli > 0) {
+                    newqr = reader.nextBits(1);
+                }
+
+                if (newqr === 0) {
+                    // Copying a previously defined set of quant ranges
+                    rpqr = 0;
+                    if (qti > 0) {
+                        rpqr = reader.nextBits(1);
+                    }
+
+                    if (rpqr === 1) {
+                        qtj = qti - 1;
+                        plj = pli;
+                    } else {
+                        qtj = toInt((3 * qti + pli - 1) / 3);
+                        plj = (pli + 2) % 3;
+                    }
+
+                    this.nqrs[qti][pli] = this.nqrs[qtj][plj];
+                    this.qrsizes[qti][pli] = this.qrsizes[qtj][plj];
+                    this.qrbmis[qti][pli] = this.qrbmis[qtj][plj];
+                } else {
+                    // Defining a new set of quant ranges
+                    qri = 0;
+                    qi = 0;
+
+                    this.qrbmis[qti][pli][qri] = reader.nextBits(ilog(this.nbms - 1));
+                    if (this.qrbmis[qti][pli][qri] >= this.nbms) {
+                        throw new TheoraError('Stream is undecodeable.');
+                    }
+
+                    while (qi < 63) {
+                        this.qrsizes[qti][pli][qri] = reader.nextBits(ilog(62 - qi)) + 1;
+                        qi += this.qrsizes[qti][pli][qri];
+                        qri += 1;
+                        this.qrbmis[qti][pli][qri] = reader.nextBits(ilog(this.nbms - 1));
+                    }
+
+                    if (qi > 63) {
+                        throw new TheoraError('Stream is undecodeable.');
+                    }
+
+                    this.nqrs[qti][pli] = qri;
+                }
+            }
+        }
+    }
+
+    /**
+     * Computing a Quantization Matrix
+     *
+     * @method computeQuantizationMatrix
+     * @param {Number} qti Quantization type index
+     * @param {Number} pli Color plane index
+     * @param {Number} qi Quantization index
+     * @return {Array} 64-element array of quantization values for each DCT coefficient in natural order
+     */
+    private computeQuantizationMatrix(qti: number, pli: number, qi: number): number[] {
+        // Quantization values for each DCT coefficient
+        const qmat = [];
+
+        // The quant range index
+        let qri;
+
+        // The left end-point of the qi range
+        let qiStart = 0;
+
+        // The right end-point of the qi range
+        let qiEnd = 0;
+
+        // Minimum quantization value allowed for the current coefficient
+        let qmin;
+
+        // Current scale value
+        let qscale;
+
+        // The DCT coefficient index
+        let ci;
+
+        // Current value of the interpolated base matrix
+        let bm;
+
+        // Find qri where qi is >= qiStart and qi <= qiEnd
+        for (qri = 0; qri < 63; qri += 1) {
+            qiEnd += this.qrsizes[qti][pli][qri];
+            if (qi <= qiEnd && qiStart <= qi) {
+                break;
+            }
+
+            qiStart = qiEnd;
+        }
+
+        // Base matrix index
+        const bmi = this.qrbmis[qti][pli][qri];
+        const bmj = this.qrbmis[qti][pli][qri + 1];
+
+        for (ci = 0; ci < 64; ci += 1) {
+            bm = toInt(
+                (2 * (qiEnd - qi) * this.bms[bmi][ci] +
+                    2 * (qi - qiStart) * this.bms[bmj][ci] +
+                    this.qrsizes[qti][pli][qri]) /
+                    (2 * this.qrsizes[qti][pli][qri])
+            );
+
+            qmin = 16;
+            if (ci > 0 && qti === 0) {
+                qmin = 8;
+            } else if (ci === 0 && qti === 1) {
+                qmin = 32;
+            }
+
+            if (ci === 0) {
+                qscale = this.dcScale[qi];
+            } else {
+                qscale = this.acScale[qi];
+            }
+
+            qmat[ci] = Math.max(qmin, Math.min(toInt((qscale * bm) / 100) * 4, 4096));
+        }
+
+        return qmat;
     }
 }
