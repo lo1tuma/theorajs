@@ -2,7 +2,7 @@ import test from 'ava';
 import { Page } from '../../../src/ogg/page';
 import { ByteStream } from '../../../src/stream/byteStream';
 
-function createStream(data: string) {
+function createStream(data: string): ByteStream {
     const stream = new ByteStream();
 
     stream.setData(data);
@@ -10,14 +10,14 @@ function createStream(data: string) {
     return stream;
 }
 
-function createPage(data: string) {
+function createPage(data: string): Page {
     const stream = createStream(data);
     const page = new Page(stream);
 
     return page;
 }
 
-function createValidPage(data: number[]) {
+function createValidPage(data: number[]): Page {
     const dataString = `OggS${String.fromCharCode(...data)}`;
     return createPage(dataString);
 }

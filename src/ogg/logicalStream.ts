@@ -3,9 +3,9 @@ import { TransportStream } from './transportStream';
 import { Page } from './page';
 
 export class LogicalStream {
-    private stream: TransportStream;
-
     public serialNumber: number;
+
+    private stream: TransportStream;
 
     private currentPage: Page;
 
@@ -60,7 +60,7 @@ export class LogicalStream {
      * @method nextPacket
      * @return {Ogg.Packet}
      */
-    nextPacket() {
+    nextPacket(): false | Packet {
         const packet = new Packet();
         let segment: false | ReadonlyArray<number>;
 
@@ -99,7 +99,6 @@ export class LogicalStream {
      */
     nextSegment(checkForContinuation?: boolean): false | ReadonlyArray<number> {
         let ret;
-        let segment;
 
         // Check for pagebreak
         if (this.segmentOffset >= this.currentPage.pageSegments) {
@@ -123,7 +122,7 @@ export class LogicalStream {
             this.segmentOffset = 0;
         }
 
-        segment = this.currentPage.segments[this.segmentOffset];
+        const segment = this.currentPage.segments[this.segmentOffset];
         this.segmentOffset += 1;
 
         return segment;
@@ -136,7 +135,7 @@ export class LogicalStream {
      * @private
      * @return {Ogg.Page}
      */
-    nextPage() {
+    nextPage(): boolean {
         let page;
 
         if (this.currentPage.isEndOfStream()) {

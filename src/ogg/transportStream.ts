@@ -28,7 +28,7 @@ export class TransportStream {
      * @method findLogicalStreams
      * @return {Array} Array of all LogicalStream instances.
      */
-    findLogicalStreams() {
+    findLogicalStreams(): LogicalStream[] {
         let page;
 
         // Lookup for all logical streams
@@ -58,7 +58,7 @@ export class TransportStream {
      * @method nextPage
      * @return {Ogg.Page}
      */
-    nextPage() {
+    nextPage(): Page {
         // To-do: check if there are more pages available
         return new Page(this.byteStream);
     }

@@ -1,8 +1,6 @@
 import { ByteStream } from '../stream/byteStream';
 
 export class Page {
-    private stream: ByteStream;
-
     public capturePattern: string;
 
     public version: number;
@@ -26,6 +24,8 @@ export class Page {
     public headerLength: number;
 
     public bodyLength: number;
+
+    private stream: ByteStream;
 
     constructor(stream: ByteStream) {
         let i;
@@ -156,7 +156,7 @@ export class Page {
      * @method isValid
      * @return {Boolean}
      */
-    isValid() {
+    isValid(): boolean {
         return this.capturePattern === 'OggS';
     }
 
@@ -166,7 +166,7 @@ export class Page {
      * @method isContinuedPage
      * @return {Boolean}
      */
-    isContinuedPage() {
+    isContinuedPage(): boolean {
         // Check bit flag
         return (this.headerType & 0x01) === 0x01;
     }
@@ -177,7 +177,7 @@ export class Page {
      * @method isEndOfStream
      * @return {Boolean}
      */
-    isEndOfStream() {
+    isEndOfStream(): boolean {
         // Check bit flag
         return (this.headerType & 0x04) === 0x04;
     }
@@ -188,7 +188,7 @@ export class Page {
      * @method isBeginOfStream
      * @return {Boolean}
      */
-    isBeginOfStream() {
+    isBeginOfStream(): boolean {
         // Check bit flag
         return (this.headerType & 0x02) === 0x02;
     }

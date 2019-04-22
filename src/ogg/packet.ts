@@ -21,7 +21,7 @@ export class Packet {
      * @method addSegment
      * @param {Array} segment Data array of the segment
      */
-    addSegment(segment: ReadonlyArray<number>) {
+    addSegment(segment: ReadonlyArray<number>): void {
         if (segment.length === 0) {
             // Don't add zero length segments
             return;
@@ -36,7 +36,7 @@ export class Packet {
      * @method getLength
      * @return {Number}
      */
-    getLength() {
+    getLength(): number {
         return this.data.length;
     }
 
@@ -46,7 +46,7 @@ export class Packet {
      * @method next8
      * @return {Number}
      */
-    next8() {
+    next8(): number {
         const val = this.get8(this.offset);
         this.offset += 1;
         return val;
@@ -58,7 +58,7 @@ export class Packet {
      * @method next16
      * @return {Number}
      */
-    next16() {
+    next16(): number {
         return (this.next8() << 8) | this.next8();
     }
 
@@ -68,7 +68,7 @@ export class Packet {
      * @method next24
      * @return {Number}
      */
-    next24() {
+    next24(): number {
         return (this.next8() << 16) | this.next16();
     }
 
@@ -78,7 +78,7 @@ export class Packet {
      * @method next32
      * @return {Number}
      */
-    next32() {
+    next32(): number {
         return (this.next8() << 24) | this.next24();
     }
 
@@ -89,7 +89,7 @@ export class Packet {
      * @param {Number} i offset
      * @return {Number}
      */
-    get8(i: number) {
+    get8(i: number): number {
         return this.data[i];
     }
 
@@ -99,7 +99,7 @@ export class Packet {
      * @method skip
      * @param {Number} n Bytes to skip.
      */
-    skip(n: number) {
+    skip(n: number): void {
         this.offset += n;
     }
 
@@ -109,7 +109,7 @@ export class Packet {
      * @method seek
      * @param {Number} pos Position
      */
-    seek(pos: number) {
+    seek(pos: number): void {
         this.offset = pos;
     }
 }

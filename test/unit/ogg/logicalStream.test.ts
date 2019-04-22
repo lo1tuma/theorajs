@@ -44,7 +44,7 @@ interface TransportStreamOverrides {
     secondPage?: false | Page;
 }
 
-function createTransportStream(overrides: TransportStreamOverrides = {}) {
+function createTransportStream(overrides: TransportStreamOverrides = {}): TransportStream {
     const { secondPage = false } = overrides;
 
     return ({
@@ -54,7 +54,7 @@ function createTransportStream(overrides: TransportStreamOverrides = {}) {
     } as unknown) as TransportStream;
 }
 
-function createSegment(length: number) {
+function createSegment(length: number): number[] {
     return new Array(length).fill(0);
 }
 

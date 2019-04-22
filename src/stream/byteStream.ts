@@ -1,3 +1,8 @@
+interface UInt64 {
+    lowBits: number;
+    highBits: number;
+}
+
 export class ByteStream {
     private index: number;
 
@@ -25,7 +30,7 @@ export class ByteStream {
      * @method setData
      * @param {String} data
      */
-    setData(data: string) {
+    setData(data: string): void {
         this.data = data;
         this.length = data.length;
     }
@@ -36,7 +41,7 @@ export class ByteStream {
      * @method next8
      * @return {Number}
      */
-    next8() {
+    next8(): number {
         const val = this.data.charCodeAt(this.index) & 0xff;
 
         this.index += 1;
@@ -50,7 +55,7 @@ export class ByteStream {
      * @param {Boolean} [littleEndian=false] Defines the byte-order
      * @return {Number}
      */
-    next16(littleEndian?: boolean) {
+    next16(littleEndian?: boolean): number {
         const b1 = this.next8();
         const b2 = this.next8();
 
@@ -68,7 +73,7 @@ export class ByteStream {
      * @param {Boolean} [littleEndian=false] Defines the byte-order
      * @return {Number}
      */
-    next24(littleEndian?: boolean) {
+    next24(littleEndian?: boolean): number {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
@@ -87,7 +92,7 @@ export class ByteStream {
      * @param {Boolean} [littleEndian=false] Defines the byte-order
      * @return {Number}
      */
-    next32(littleEndian?: boolean) {
+    next32(littleEndian?: boolean): number {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
@@ -109,7 +114,7 @@ export class ByteStream {
      * @param {Boolean} [littleEndian=false] Defines the byte-order
      * @return {Object}
      */
-    next64(littleEndian?: boolean) {
+    next64(littleEndian?: boolean): UInt64 {
         const b1 = this.next8();
         const b2 = this.next8();
         const b3 = this.next8();
@@ -162,7 +167,7 @@ export class ByteStream {
      * @method skip
      * @param {Number} n Number of values.
      */
-    skip(n: number) {
+    skip(n: number): void {
         this.index += n;
     }
 }
