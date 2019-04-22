@@ -1,15 +1,112 @@
-import * as util from './util';
-import * as constants from './constants';
-// Mapping tables
-let tables;
-
-// Offsets of the color planes
-let colorPlaneOffsets;
-
-/* Export */
-let Constructor;
+import { Packet } from '../ogg/packet';
+import { Bitstream, sign, toInt } from './util';
+import {
+    MACRO_BLOCK_MODE_SCHEMES,
+    MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE,
+    HUFFMAN_TABLE_GROUPS,
+    REFERENCE_FRAME_INDICIES,
+    DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE,
+    ZIG_ZAG_ORDER_MAPPING_TABLE,
+    COSINES,
+    SINES,
+    INTRA_PREDICTOR,
+    LONG_RUN_LENGTH_HUFFMAN_TABLE,
+    SHORT_RUN_LENGTH_HUFFMAN_TABLE,
+    MACRO_BLOCK_MODE_SCHEMES_HUFFMAN_TABLE,
+    HuffmanVector,
+    HuffmanRunLength,
+    HuffmanTable
+} from './constants';
+import { Header } from './header';
+import { TheoraError } from './errors';
 
 export class Frame {
+    public recy: number[][];
+
+    public reccb: number[][];
+
+    public reccr: number[][];
+
+    public changedPixels: number[][];
+
+    private packet: Packet;
+
+    private header: Header;
+
+    private reader: Bitstream;
+
+    private goldrefy?: number[][];
+
+    private goldrefcb?: number[][];
+
+    private goldrefcr?: number[][];
+
+    private prevrefy?: number[][];
+
+    private prevrefcb?: number[][];
+
+    private prevrefcr?: number[][];
+
+    private referenceFrames: [null, [number[][]?, number[][]?, number[][]?], [number[][]?, number[][]?, number[][]?]];
+
+    private tables: any;
+
+    private colorPlaneOffsets: number[];
+
+    /**
+     * An NBS-element array of motion vectors for each block.
+     *
+     * @param mvects
+     */
+    private mvects: number[][];
+
+    /**
+     * An NBS × 64 array of quantized DCT coefficient values for each block in zig-zag order
+     *
+     * @proerty coeffs
+     * @type {Array}
+     */
+    private coeffs: number[][];
+
+    /**
+     * An NBS-element array of the coefficient count for each block
+     *
+     * @proerty coeffs
+     * @type {Array}
+     */
+    private ncoeffs: number[];
+
+    /**
+     * An NBS-element array of flags indicating which blocks are coded.
+     *
+     * @param bcoded
+     * @private
+     * @type {Array}
+     */
+    private bcoded: number[];
+
+    private rpch: number;
+
+    private rpcw: number;
+
+    private rpyh: number;
+
+    private rpyw: number;
+
+    private qis: number[];
+
+    private qiis: number[];
+
+    private mbmodes: number[];
+
+    private codedBlocks: number[];
+
+    private uncodedBlocks: number[];
+
+    private ftype?: number;
+
+    private nqis: number;
+
     /**
      * A theora frame, which are to be decoded from an input ogg packet.
      * If it is not an intra frame, the two reference frames have to be set.
@@ -19,13 +116,37 @@ export class Frame {
      * @constructor
      * @param {Ogg.Packet} packet
      * @param {Theora.Frame} [goldReferenceFrame]
-     * @param {Theora.Frame} [prefReferenceFrame]
+     * @param {Theora.Frame} [prevReferenceFrame]
      */
-    constructor(packet, goldReferenceFrame, prefReferenceFrame) {
+    constructor(header: Header, packet: Packet, goldReferenceFrame: Frame, prevReferenceFrame: Frame) {
+        this.recy = [];
+        this.reccb = [];
+        this.reccr = [];
+
+        this.tables = {};
+        this.colorPlaneOffsets = [];
+
         this.packet = packet;
 
+        this.header = header;
+
+        this.mvects = [];
+        this.coeffs = [];
+        this.ncoeffs = [];
+        this.bcoded = [];
+        this.rpch = 0;
+        this.rpcw = 0;
+        this.rpyh = 0;
+        this.rpyw = 0;
+        this.qis = [];
+        this.qiis = [];
+        this.mbmodes = [];
+        this.codedBlocks = [];
+        this.uncodedBlocks = [];
+        this.nqis = 0;
+
         // Init bitwise packet reader
-        this.reader = new util.Bitstream(packet, 0);
+        this.reader = new Bitstream(packet, 0);
 
         // Set reference color planes
         if (goldReferenceFrame) {
@@ -34,10 +155,10 @@ export class Frame {
             this.goldrefcr = goldReferenceFrame.reccr;
         }
 
-        if (prefReferenceFrame) {
-            this.prevrefy = prefReferenceFrame.recy;
-            this.prevrefcb = prefReferenceFrame.reccb;
-            this.prevrefcr = prefReferenceFrame.reccr;
+        if (prevReferenceFrame) {
+            this.prevrefy = prevReferenceFrame.recy;
+            this.prevrefcb = prevReferenceFrame.reccb;
+            this.prevrefcr = prevReferenceFrame.reccr;
         }
 
         /**
@@ -74,11 +195,11 @@ export class Frame {
      * @static
      * @param {Object} mTables
      */
-    static setMappingTables(mTables) {
-        tables = mTables;
+    public setMappingTables(mTables: any): void {
+        this.tables = mTables;
 
         // Offsets for all color planes
-        colorPlaneOffsets = [0, header.nlbs, header.nlbs + header.ncbs];
+        this.colorPlaneOffsets = [0, this.header.nlbs, this.header.nlbs + this.header.ncbs];
     }
 
     /**
@@ -86,7 +207,7 @@ export class Frame {
      *
      * @method decode
      */
-    decode() {
+    decode(): void {
         // The index of the current block
         let bi;
 
@@ -112,26 +233,26 @@ export class Frame {
             this.ftype = 1;
             this.nqis = 1;
             this.qis[0] = 63;
-            for (bi = 0; bi < header.nbs; bi += 1) {
+            for (bi = 0; bi < this.header.nbs; bi += 1) {
                 this.bcoded[bi] = 0;
             }
         }
 
         // Set Y plane dimensions
-        this.rpyw = 16 * header.fmbw;
-        this.rpyh = 16 * header.fmbh;
+        this.rpyw = 16 * this.header.fmbw;
+        this.rpyh = 16 * this.header.fmbh;
 
         // Set dimensions of the chroma planes
         // corresponding to the pixel format
-        if (header.pf === 0) {
-            this.rpcw = 8 * header.fmbw;
-            this.rpch = 8 * header.fmbh;
-        } else if (header.pf === 2) {
-            this.rpcw = 8 * header.fmbw;
-            this.rpch = 16 * header.fmbh;
-        } else if (header.pf === 3) {
-            this.rpcw = 16 * header.fmbw;
-            this.rpch = 16 * header.fmbh;
+        if (this.header.pf === 0) {
+            this.rpcw = 8 * this.header.fmbw;
+            this.rpch = 8 * this.header.fmbh;
+        } else if (this.header.pf === 2) {
+            this.rpcw = 8 * this.header.fmbw;
+            this.rpch = 16 * this.header.fmbh;
+        } else if (this.header.pf === 3) {
+            this.rpcw = 16 * this.header.fmbw;
+            this.rpch = 16 * this.header.fmbh;
         }
 
         // Reconstruct the complte frame
@@ -147,7 +268,7 @@ export class Frame {
      * @method decodeFrameHeader
      * @private
      */
-    decodeFrameHeader() {
+    decodeFrameHeader(): void {
         // A flag indicating there are more qi values to be decoded.
         let moreQis;
 
@@ -156,10 +277,7 @@ export class Frame {
 
         // First bit of a valid data packet must be set to 0
         if (this.reader.nextBits(1) !== 0) {
-            throw {
-                name: 'TheoraError',
-                message: 'Unable to decode stream: invalid frame packet.'
-            };
+            throw new TheoraError('Unable to decode stream: invalid frame packet.');
         }
 
         /**
@@ -204,10 +322,7 @@ export class Frame {
         if (this.ftype === 0) {
             reserved = this.reader.nextBits(3);
             if (reserved !== 0) {
-                throw {
-                    name: 'TheoraError',
-                    message: 'Unable to decode stream: used reserved bits.'
-                };
+                throw new TheoraError('Unable to decode stream: used reserved bits.');
             }
         }
     }
@@ -221,32 +336,15 @@ export class Frame {
      * @param {Array} huffmanCodes Lookup table.
      * @return {Array} The decoded bits.
      */
-    decodeRunLengthBitString(nbits, huffmanCodes) {
+    decodeRunLengthBitString(nbits: number, huffmanCodes: HuffmanTable<HuffmanRunLength>): number[] {
         // Output
-        const bits = [];
+        const bits: number[] = [];
 
         // The number of bits decoded so far
         let len = 0;
 
         // The value associated with the current run
         let bit;
-
-        // The length of the current run
-        let rlen;
-
-        // The number of extra bits needed to decode the run length
-        let rbits;
-
-        // The start of the possible run-length values for a given Huffman code
-        let rstart;
-
-        // The offset from RSTART of the run-length
-        let roffs;
-
-        // A Huffman code
-        let code;
-
-        let i;
 
         // Return empty array if nbits is zero
         if (len === nbits) {
@@ -256,18 +354,22 @@ export class Frame {
         // Read the current bit
         bit = this.reader.nextBits(1);
 
+        // eslint-disable-next-line no-constant-condition
         while (true) {
             // Get the huffman code
-            code = this.huffmanTableLookup(huffmanCodes);
+            const code = this.huffmanTableLookup<HuffmanRunLength>(huffmanCodes);
 
-            rstart = code.rstart;
-            rbits = code.rbits;
+            // `rstart`: the start of the possible run-length values for a given Huffman code
+            // `rbits`: the number of extra bits needed to decode the run length
+            const { rstart, rbits } = code;
 
-            roffs = this.reader.nextBits(rbits);
-            rlen = rstart + roffs;
+            // The offset from RSTART of the run-length
+            const roffs = this.reader.nextBits(rbits);
+            // The length of the current run
+            const rlen = rstart + roffs;
 
             // Append rlen coppies of bit to bits
-            for (i = 0; i < rlen; i += 1) {
+            for (let i = 0; i < rlen; i += 1) {
                 bits.push(bit);
             }
 
@@ -279,7 +381,7 @@ export class Frame {
             }
 
             if (len > nbits) {
-                throw { name: 'TheoraError', message: 'Invalid stream.' };
+                throw new TheoraError('Invalid stream.');
             }
 
             if (rlen === 4129) {
@@ -298,7 +400,7 @@ export class Frame {
      * @method decodeCodedBlockFlags
      * @private
      */
-    decodeCodedBlockFlags() {
+    decodeCodedBlockFlags(): void {
         // The length of a bit string to decode
         let nbits;
 
@@ -316,15 +418,6 @@ export class Frame {
 
         // The index of the current block in coded order
         let bi;
-
-        /**
-         * An NBS-element array of flags indicating which blocks are coded.
-         *
-         * @param bcoded
-         * @private
-         * @type {Array}
-         */
-        this.bcoded = [];
 
         /**
          * A list only of all coded block indicies.
@@ -347,7 +440,7 @@ export class Frame {
         // Determine frame type
         if (this.ftype === 0) {
             // Intra frame
-            for (bi = 0; bi < header.nbs; bi += 1) {
+            for (bi = 0; bi < this.header.nbs; bi += 1) {
                 this.bcoded[bi] = 1;
                 this.codedBlocks.push(bi);
             }
@@ -355,23 +448,23 @@ export class Frame {
             // Inter frame
 
             // read for all super blocks the falgs if they are partially coded or not
-            sbpCoded = this.decodeRunLengthBitString(header.nsbs, constants.LONG_RUN_LENGTH_HUFFMAN_TABLE);
+            sbpCoded = this.decodeRunLengthBitString(this.header.nsbs, LONG_RUN_LENGTH_HUFFMAN_TABLE);
 
             nbits = 0;
             // Assign nbits the number of all non-partially coded super blocks
-            for (sbi = 0; sbi < header.nsbs; sbi += 1) {
+            for (sbi = 0; sbi < this.header.nsbs; sbi += 1) {
                 if (sbpCoded[sbi] === 0) {
                     nbits += 1;
                 }
             }
 
             // Read the flags for all non-partially coded super block if they are fully coded or not
-            bits = this.decodeRunLengthBitString(nbits, constants.LONG_RUN_LENGTH_HUFFMAN_TABLE);
+            bits = this.decodeRunLengthBitString(nbits, LONG_RUN_LENGTH_HUFFMAN_TABLE);
 
             // Map the flags to their corresponding super blocks
-            for (sbi = 0; sbi < header.nsbs; sbi += 1) {
+            for (sbi = 0; sbi < this.header.nsbs; sbi += 1) {
                 if (sbpCoded[sbi] === 0) {
-                    sbfCoded[sbi] = bits.shift();
+                    sbfCoded[sbi] = bits.shift() as number;
                 } else {
                     sbfCoded[sbi] = 0;
                 }
@@ -379,22 +472,22 @@ export class Frame {
 
             nbits = 0;
             // Assign nbits the number of blocks contained in all partially coded super blocks
-            for (sbi = 0; sbi < header.nsbs; sbi += 1) {
+            for (sbi = 0; sbi < this.header.nsbs; sbi += 1) {
                 if (sbpCoded[sbi] === 1) {
-                    nbits += tables.superBlockSizes[sbi];
+                    nbits += this.tables.superBlockSizes[sbi];
                 }
             }
 
             // Read the flags that indicates that a specific block in a partially coded super block is coded or not
-            bits = this.decodeRunLengthBitString(nbits, constants.SHORT_RUN_LENGTH_HUFFMAN_TABLE);
+            bits = this.decodeRunLengthBitString(nbits, SHORT_RUN_LENGTH_HUFFMAN_TABLE);
 
-            for (bi = 0; bi < header.nbs; bi += 1) {
-                sbi = tables.biToSbi[bi];
+            for (bi = 0; bi < this.header.nbs; bi += 1) {
+                sbi = this.tables.biToSbi[bi];
 
                 if (sbpCoded[sbi] === 0) {
                     this.bcoded[bi] = sbfCoded[sbi];
                 } else {
-                    this.bcoded[bi] = bits.shift();
+                    this.bcoded[bi] = bits.shift() as number;
                 }
 
                 // If block is coded add it to the codedBlocks list
@@ -413,12 +506,12 @@ export class Frame {
      * @method decodeMacroBlockCodingModes
      * @private
      */
-    decodeMacroBlockCodingModes() {
+    decodeMacroBlockCodingModes(): void {
         // The mode coding scheme
         let mScheme;
 
         // The list of modes corresponding to each Huffman code
-        let mAlphabet = [];
+        let mAlphabet: number[] = [];
 
         // The index of the current macro block
         let mbi;
@@ -447,7 +540,7 @@ export class Frame {
         // Determine the frame type
         if (this.ftype === 0) {
             // On intra frames the modes will be 1 for all macro blocks
-            for (mbi = 0; mbi < header.nmbs; mbi += 1) {
+            for (mbi = 0; mbi < this.header.nmbs; mbi += 1) {
                 this.mbmodes[mbi] = 1;
             }
         } else {
@@ -462,19 +555,19 @@ export class Frame {
                 }
             } else if (mScheme !== 7) {
                 // Get the alphabet from a predefined table
-                mAlphabet = constants.MACRO_BLOCK_MODE_SCHEMES[mScheme];
+                mAlphabet = MACRO_BLOCK_MODE_SCHEMES[mScheme] as number[];
             }
 
-            for (mbi = 0; mbi < header.nmbs; mbi += 1) {
+            for (mbi = 0; mbi < this.header.nmbs; mbi += 1) {
                 // Check if there is at least one coded block in the current macro block
                 len = mbi * 4 + 4;
                 for (bi = mbi * 4; bi < len; bi += 1) {
                     if (this.bcoded[bi] === 1) {
-                        if (mScheme !== 7) {
-                            mi = this.huffmanTableLookup(constants.MACRO_BLOCK_MODE_SCHEMES_HUFFMAN_TABLE);
-                            this.mbmodes[mbi] = mAlphabet[mi];
-                        } else {
+                        if (mScheme === 7) {
                             this.mbmodes[mbi] = this.reader.nextBits(3);
+                        } else {
+                            mi = this.huffmanTableLookup<HuffmanVector>(MACRO_BLOCK_MODE_SCHEMES_HUFFMAN_TABLE);
+                            this.mbmodes[mbi] = mAlphabet[mi];
                         }
 
                         break;
@@ -495,19 +588,20 @@ export class Frame {
      * @param {Array} map The keys of the map must be huffman codes (bitstrings)
      * @return {Object} The corresponding object from the map
      */
-    huffmanTableLookup(map) {
+    huffmanTableLookup<T>(map: HuffmanTable<T>): T {
         let code = 0;
         let bits = -1;
         let key;
+        const [codes, offsets] = map;
 
         do {
             bits += 1;
             code += this.reader.nextBits(1);
-            key = code - map[1][bits];
+            key = code - offsets[bits];
             code <<= 1;
-        } while (map[0][bits][key] === undefined);
+        } while (codes[bits][key] === undefined);
 
-        return map[0][bits][key];
+        return codes[bits][key];
     }
 
     /**
@@ -518,7 +612,7 @@ export class Frame {
      * @param {Object} map The keys of the map must be huffman codes (bitstrings)
      * @return {Object} The corresponding object from the map
      */
-    dynamicHuffmanTableLookup(map) {
+    dynamicHuffmanTableLookup<T>(dynamicMap: HuffmanTable<T>[0]): T {
         let code = 0;
         let key;
         let bits = -1;
@@ -528,9 +622,9 @@ export class Frame {
             bits += 1;
             key = code;
             code <<= 1;
-        } while (!map[bits].hasOwnProperty(key));
+        } while (!Object.prototype.hasOwnProperty.call(dynamicMap[bits], key));
 
-        return map[bits][key];
+        return dynamicMap[bits][key];
     }
 
     /**
@@ -541,7 +635,7 @@ export class Frame {
      * @param {Number} mvmode The motion vector decoding mode.
      * @return {Array} [mvx, mvy]
      */
-    decodeMotionVector(mvmode) {
+    decodeMotionVector(mvmode: number): [number, number] {
         // The sign of the motion vector component just decoded
         let mvSign;
 
@@ -550,8 +644,8 @@ export class Frame {
         let mvy;
 
         if (mvmode === 0) {
-            mvx = this.huffmanTableLookup(constants.MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE);
-            mvy = this.huffmanTableLookup(constants.MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE);
+            mvx = this.huffmanTableLookup<HuffmanVector>(MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE);
+            mvy = this.huffmanTableLookup<HuffmanVector>(MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE);
         } else {
             // Read mvx
             mvx = this.reader.nextBits(5);
@@ -582,7 +676,7 @@ export class Frame {
      * @method decodeMacroBlockMotionVectors
      * @private
      */
-    decodeMacroBlockMotionVectors() {
+    decodeMacroBlockMotionVectors(): void {
         // Last motion vector
         let last1 = [0, 0];
 
@@ -590,13 +684,13 @@ export class Frame {
         let last2 = [0, 0];
 
         // The X component of a motion vector
-        let mvx;
+        let mvx = 0;
 
         // The Y component of a motion vector
-        let mvy;
+        let mvy = 0;
 
         // The index of the current macro block
-        let mbi;
+        let mbi = 0;
 
         // The index of the lower-left luma block in the macro block
         let a;
@@ -626,27 +720,18 @@ export class Frame {
         // The current block index in coded order
         let bi;
 
-        // The motion vector coding mode
-        let mvmode;
-
         // A single motion vector
         let mVector;
 
         // Loop counter
         let cnt;
 
-        /**
-         * An NBS-element array of motion vectors for each block.
-         *
-         * @param mvects
-         */
-        this.mvects = [];
+        // The motion vector coding mode
+        const mvmode = this.reader.nextBits(1);
 
-        mvmode = this.reader.nextBits(1);
-
-        for (mbi = 0; mbi < header.nmbs; mbi += 1) {
+        for (mbi = 0; mbi < this.header.nmbs; mbi += 1) {
             if (this.mbmodes[mbi] === 7) {
-                blocksOfMacroBlock = tables.mbiToBi[mbi];
+                blocksOfMacroBlock = this.tables.mbiToBi[mbi];
 
                 a = blocksOfMacroBlock[0];
                 b = blocksOfMacroBlock[1];
@@ -689,7 +774,7 @@ export class Frame {
                     this.mvects[d] = [0, 0];
                 }
 
-                switch (header.pf) {
+                switch (this.header.pf) {
                     case 0: // (4:2:0) subsampling
                         e = blocksOfMacroBlock[4];
                         f = blocksOfMacroBlock[5];
@@ -805,8 +890,8 @@ export class Frame {
                 // Not INTER_MV_FOUR
 
                 // for all bi’s in macro block mbi
-                for (cnt = 0; cnt < tables.mbiToBi[mbi].length; cnt += 1) {
-                    bi = tables.mbiToBi[mbi][cnt];
+                for (cnt = 0; cnt < this.tables.mbiToBi[mbi].length; cnt += 1) {
+                    bi = this.tables.mbiToBi[mbi][cnt];
                     this.mvects[bi] = [mvx, mvy];
                 }
             }
@@ -820,7 +905,7 @@ export class Frame {
      * @method decodeBlockLevelQiis
      * @private
      */
-    decodeBlockLevelQiis() {
+    decodeBlockLevelQiis(): void {
         // Length of a bit string to decode
         let nbits;
 
@@ -842,26 +927,26 @@ export class Frame {
         this.qiis = [];
 
         // Initialize all qi values with 0
-        for (bi = 0; bi < header.nbs; bi += 1) {
+        for (bi = 0; bi < this.header.nbs; bi += 1) {
             this.qiis[bi] = 0;
         }
 
         for (qii = 0; qii < this.nqis - 1; qii += 1) {
             // Assign nbits the number of coded blocks where qiis[bi] == qii
             nbits = 0;
-            for (bi = 0; bi < header.nbs; bi += 1) {
+            for (bi = 0; bi < this.header.nbs; bi += 1) {
                 if (this.bcoded[bi] !== 0 && this.qiis[bi] === qii) {
                     nbits += 1;
                 }
             }
 
             // Read an nbits string
-            bits = this.decodeRunLengthBitString(nbits, constants.LONG_RUN_LENGTH_HUFFMAN_TABLE);
+            bits = this.decodeRunLengthBitString(nbits, LONG_RUN_LENGTH_HUFFMAN_TABLE);
 
             // Add the recently read data to their corresponding qi value
-            for (bi = 0; bi < header.nbs; bi += 1) {
+            for (bi = 0; bi < this.header.nbs; bi += 1) {
                 if (this.bcoded[bi] !== 0 && this.qiis[bi] === qii) {
-                    this.qiis[bi] += bits.shift();
+                    this.qiis[bi] += bits.shift() as number;
                 }
             }
         }
@@ -878,7 +963,7 @@ export class Frame {
      * @param {Number} ti The current token index.
      * @return {Number} The remaining length of the current EOB run.
      */
-    decodeEOBToken(token, tis, bi, ti) {
+    decodeEOBToken(token: number, tis: number[], bi: number, ti: number): number {
         // Output
         let eobs;
 
@@ -952,7 +1037,7 @@ export class Frame {
      * @param {Number} bi The block index in coded order.
      * @param {Number} ti The current token index.
      */
-    decodeCoefficientToken(token, tis, bi, ti) {
+    decodeCoefficientToken(token: number, tis: number[], bi: number, ti: number): void {
         // A flag indicating the sign of the current coefficient
         let sign;
 
@@ -1266,10 +1351,7 @@ export class Frame {
                 this.ncoeffs[bi] = tis[bi];
                 break;
             default:
-                throw {
-                    name: 'TheoraError',
-                    message: 'Unable to decode stream: invalid frame packet.'
-                };
+                throw new TheoraError('Unable to decode stream: invalid frame packet.');
         }
     }
 
@@ -1279,7 +1361,7 @@ export class Frame {
      * @method decodeDCTCoefficients
      * @private
      */
-    decodeDCTCoefficients() {
+    decodeDCTCoefficients(): void {
         // Index of the current block in coded order
         let bi;
 
@@ -1290,13 +1372,13 @@ export class Frame {
         let tj;
 
         // Index of the current Huffman table to use for the luma plane within a group
-        let htiL;
+        let htiL = 0;
 
         // Index of the current Huffman table to use for the chroma planes within a group
-        let htiC;
+        let htiC = 0;
 
         // Index of the current Huffman table to use
-        let hti;
+        let hti: number;
 
         // An NBS-element array of the current token index for each block
         const tis = [];
@@ -1308,7 +1390,7 @@ export class Frame {
         let token;
 
         // The current Huffman table group
-        let hg;
+        let hg: number;
 
         // Copy of the coded blocks list
         const list = this.codedBlocks.slice();
@@ -1318,24 +1400,8 @@ export class Frame {
 
         let i;
 
-        /**
-         * An NBS × 64 array of quantized DCT coefficient values for each block in zig-zag order
-         *
-         * @proerty coeffs
-         * @type {Array}
-         */
-        this.coeffs = [];
-
-        /**
-         * An NBS-element array of the coefficient count for each block
-         *
-         * @proerty coeffs
-         * @type {Array}
-         */
-        this.ncoeffs = [];
-
         // Init
-        for (bi = 0; bi < header.nbs; bi += 1) {
+        for (bi = 0; bi < this.header.nbs; bi += 1) {
             tis[bi] = 0;
             this.ncoeffs[bi] = 0;
             this.coeffs[bi] = [];
@@ -1366,14 +1432,14 @@ export class Frame {
                         tis[bi] = 64;
                         eobs -= 1;
                     } else {
-                        hg = constants.HUFFMAN_TABLE_GROUPS[ti];
-                        if (bi < header.nlbs) {
+                        hg = HUFFMAN_TABLE_GROUPS[ti];
+                        if (bi < this.header.nlbs) {
                             hti = 16 * hg + htiL;
                         } else {
                             hti = 16 * hg + htiC;
                         }
 
-                        token = this.dynamicHuffmanTableLookup(header.hts[hti]);
+                        token = this.dynamicHuffmanTableLookup<number>(this.header.hts[hti]);
                         if (token < 7) {
                             eobs = this.decodeEOBToken(token, tis, bi, ti);
                         } else {
@@ -1404,7 +1470,7 @@ export class Frame {
      * @param {Array} lastdc A 3-element array containing the most recently decoded DC value
      * @return	{Number} The predicted DC value for the current block
      */
-    computeDCPredictor(bi, lastdc) {
+    computeDCPredictor(bi: number, lastdc: number[]): number {
         // Output
         let dcpred;
 
@@ -1423,49 +1489,44 @@ export class Frame {
         // The index of a neighboring block in coded order
         let bj;
 
-        // The index of the macro block containing block bi
-        let mbi;
-
         // The index of the macro block containing block bj
         let mbj;
-
-        // The index of the reference frame
-        let rfi;
 
         // The index of the current color plan
         let pli = 0;
 
-        // The index of the current block in raster order
-        let bri;
-
         // The width of the current color plane
-        let planeWidth = header.flbw;
+        let planeWidth = this.header.flbw;
 
+        // The index of the macro block containing block bi
         // Get the corresponding macro block index and reference frame index
-        mbi = tables.biToMbi[bi];
-        rfi = constants.REFERENCE_FRAME_INDICIES[this.mbmodes[mbi]];
+        const mbi = this.tables.biToMbi[bi];
+
+        // The index of the reference frame
+        const rfi = REFERENCE_FRAME_INDICIES[this.mbmodes[mbi]];
 
         // Determine the color plane index
-        if (bi >= header.nlbs + header.ncbs) {
+        if (bi >= this.header.nlbs + this.header.ncbs) {
             pli = 2;
-            planeWidth = header.fcbw;
-        } else if (bi >= header.nlbs) {
+            planeWidth = this.header.fcbw;
+        } else if (bi >= this.header.nlbs) {
             pli = 1;
-            planeWidth = header.fcbw;
+            planeWidth = this.header.fcbw;
         }
 
+        // The index of the current block in raster order
         // Bri relative to the color plane
-        bri = tables.codedToRasterOrder[bi] - colorPlaneOffsets[pli];
+        const bri: number = this.tables.codedToRasterOrder[bi] - this.colorPlaneOffsets[pli];
 
         p[0] = 0;
         // If bi is not along the left edge of the coded frame
         if (bri % planeWidth !== 0) {
             // Left neighbor of bi in coded order
-            bj = tables.rasterToCodedOrder[bri - 1 + colorPlaneOffsets[pli]];
+            bj = this.tables.rasterToCodedOrder[bri - 1 + this.colorPlaneOffsets[pli]];
 
             if (this.bcoded[bj] !== 0) {
-                mbj = tables.biToMbi[bj];
-                if (rfi === constants.REFERENCE_FRAME_INDICIES[this.mbmodes[mbj]]) {
+                mbj = this.tables.biToMbi[bj];
+                if (rfi === REFERENCE_FRAME_INDICIES[this.mbmodes[mbj]]) {
                     p[0] = 1;
                     pbi[0] = bj;
                 }
@@ -1476,11 +1537,11 @@ export class Frame {
         //  Block bi is not along the left edge nor the bottom edge of the coded frame
         if (bri % planeWidth !== 0 && bri >= planeWidth) {
             // Lower-left neighbor of bi in coded order
-            bj = tables.rasterToCodedOrder[bri - 1 - planeWidth + colorPlaneOffsets[pli]];
+            bj = this.tables.rasterToCodedOrder[bri - 1 - planeWidth + this.colorPlaneOffsets[pli]];
 
             if (this.bcoded[bj] !== 0) {
-                mbj = tables.biToMbi[bj];
-                if (rfi === constants.REFERENCE_FRAME_INDICIES[this.mbmodes[mbj]]) {
+                mbj = this.tables.biToMbi[bj];
+                if (rfi === REFERENCE_FRAME_INDICIES[this.mbmodes[mbj]]) {
                     p[1] = 1;
                     pbi[1] = bj;
                 }
@@ -1491,11 +1552,11 @@ export class Frame {
         // Block bi is not along the the bottom edge of the coded frame
         if (bri >= planeWidth) {
             // Lower neighbor of bi in coded order
-            bj = tables.rasterToCodedOrder[bri - planeWidth + colorPlaneOffsets[pli]];
+            bj = this.tables.rasterToCodedOrder[bri - planeWidth + this.colorPlaneOffsets[pli]];
 
             if (this.bcoded[bj] !== 0) {
-                mbj = tables.biToMbi[bj];
-                if (rfi === constants.REFERENCE_FRAME_INDICIES[this.mbmodes[mbj]]) {
+                mbj = this.tables.biToMbi[bj];
+                if (rfi === REFERENCE_FRAME_INDICIES[this.mbmodes[mbj]]) {
                     p[2] = 1;
                     pbi[2] = bj;
                 }
@@ -1506,11 +1567,11 @@ export class Frame {
         // Block bi is not along the right edge nor the bottom edge of the coded frame
         if ((bri + 1) % planeWidth !== 0 && bri >= planeWidth) {
             // Lower-right neighbor of bi in coded order
-            bj = tables.rasterToCodedOrder[bri + 1 - planeWidth + colorPlaneOffsets[pli]];
+            bj = this.tables.rasterToCodedOrder[bri + 1 - planeWidth + this.colorPlaneOffsets[pli]];
 
             if (this.bcoded[bj] !== 0) {
-                mbj = tables.biToMbi[bj];
-                if (rfi === constants.REFERENCE_FRAME_INDICIES[this.mbmodes[mbj]]) {
+                mbj = this.tables.biToMbi[bj];
+                if (rfi === REFERENCE_FRAME_INDICIES[this.mbmodes[mbj]]) {
                     p[3] = 1;
                     pbi[3] = bj;
                 }
@@ -1521,8 +1582,8 @@ export class Frame {
         if (p[0] === 0 && p[1] === 0 && p[2] === 0 && p[3] === 0) {
             dcpred = lastdc[rfi];
         } else {
-            w = constants.DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE[p.join('')].weights;
-            pdiv = constants.DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE[p.join('')].divisor;
+            w = DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE[p.join('')].weights;
+            pdiv = DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE[p.join('')].divisor;
             dcpred = 0;
             if (p[0] !== 0) {
                 dcpred += w[0] * this.coeffs[pbi[0]][0];
@@ -1540,7 +1601,7 @@ export class Frame {
                 dcpred += w[3] * this.coeffs[pbi[3]][0];
             }
 
-            dcpred = util.toInt(dcpred / pdiv);
+            dcpred = toInt(dcpred / pdiv);
 
             // If P[0], P[1], and P[2] are all non-zero
             if (p[0] !== 0 && p[1] !== 0 && p[2] !== 0) {
@@ -1563,7 +1624,7 @@ export class Frame {
      * @method invertDCPrediction
      * @private
      */
-    invertDCPrediction() {
+    invertDCPrediction(): void {
         // The predicted DC value for the current block
         let dcpred;
 
@@ -1597,13 +1658,13 @@ export class Frame {
             lastdc[2] = 0;
 
             if (pli === 0) {
-                len = header.nlbs;
+                len = this.header.nlbs;
             } else {
-                len = header.ncbs;
+                len = this.header.ncbs;
             }
 
             for (bri = 0; bri < len; bri += 1) {
-                bi = tables.rasterToCodedOrder[bri + colorPlaneOffsets[pli]];
+                bi = this.tables.rasterToCodedOrder[bri + this.colorPlaneOffsets[pli]];
                 if (this.bcoded[bi] !== 0) {
                     dcpred = this.computeDCPredictor(bi, lastdc);
                     dc = this.coeffs[bi][0] + dcpred;
@@ -1615,8 +1676,8 @@ export class Frame {
                     }
 
                     this.coeffs[bi][0] = dc;
-                    mbi = tables.biToMbi[bi];
-                    rfi = constants.REFERENCE_FRAME_INDICIES[this.mbmodes[mbi]];
+                    mbi = this.tables.biToMbi[bi];
+                    rfi = REFERENCE_FRAME_INDICIES[this.mbmodes[mbi]];
                     lastdc[rfi] = dc;
                 }
             }
@@ -1638,9 +1699,17 @@ export class Frame {
      * @param {Number} mvy The vertical component of the block motion vector
      * @return {Array} Predictor values to use for INTER coded blocks
      */
-    getWholePixelPredictor(rpw, rph, refp, bx, by, mvx, mvy) {
+    getWholePixelPredictor(
+        rpw: number,
+        rph: number,
+        refp: number[][],
+        bx: number,
+        by: number,
+        mvx: number,
+        mvy: number
+    ): number[][] {
         // Output
-        const pred = [];
+        const pred: number[][] = [];
 
         // The horizontal pixel index in the block
         let bix;
@@ -1723,9 +1792,19 @@ export class Frame {
      * @param {Number} mvy2 The vertical component of the second whole-pixel motion vector
      * @return {Array} Predictor values to use for INTER coded blocks
      */
-    getHalfPixelPredictor(rpw, rph, refp, bx, by, mvx, mvy, mvx2, mvy2) {
+    getHalfPixelPredictor(
+        rpw: number,
+        rph: number,
+        refp: number[][],
+        bx: number,
+        by: number,
+        mvx: number,
+        mvy: number,
+        mvx2: number,
+        mvy2: number
+    ): number[][] {
         // Output
-        const pred = [];
+        const pred: number[][] = [];
 
         // The horizontal pixel index in the block
         let bix;
@@ -1813,7 +1892,7 @@ export class Frame {
      * @param {Number} bi The index of the current block in coded order
      * @return {Array} Dequantized DCT coefficients
      */
-    dequantize(qti, pli, qi0, qi, bi) {
+    dequantize(qti: number, pli: number, qi0: number, qi: number, bi: number): number[] {
         // Output
         const dqc = [];
 
@@ -1836,7 +1915,7 @@ export class Frame {
         let col;
 
         // Compute the DC quantization matrix QMAT
-        qmat = header.qmats[qti][pli][qi0];
+        qmat = this.header.qmats[qti][pli][qi0];
         c = this.coeffs[bi][0] * qmat[0];
 
         // Truncate c to a signed 16-bit representation
@@ -1849,12 +1928,12 @@ export class Frame {
         dqc[0] = c;
 
         // Compute the AC quantization matrix QMAT
-        qmat = header.qmats[qti][pli][qi];
+        qmat = this.header.qmats[qti][pli][qi];
         ci = 1;
         col = 1;
         for (row = 0; row < 8; row += 1) {
             while (col < 8) {
-                zzi = constants.ZIG_ZAG_ORDER_MAPPING_TABLE[row][col];
+                zzi = ZIG_ZAG_ORDER_MAPPING_TABLE[row][col];
                 c = this.coeffs[bi][zzi] * qmat[ci];
 
                 // Truncate c to a signed 16-bit representation
@@ -1883,7 +1962,7 @@ export class Frame {
      * @param {Array} y An 8-element array of DCT coefficients
      * @return {Array}
      */
-    invertDCT1D(y) {
+    invertDCT1D(y: number[]): number[] {
         // An 8-element array of output values
         const x = [];
 
@@ -1894,13 +1973,13 @@ export class Frame {
         let r;
 
         // 16-bit Approximations of Sines and Cosines
-        const c3 = constants.COSINES[2];
-        const c4 = constants.COSINES[3];
-        const c6 = constants.COSINES[5];
-        const c7 = constants.COSINES[6];
-        const s3 = constants.SINES[2];
-        const s6 = constants.SINES[5];
-        const s7 = constants.SINES[6];
+        const c3 = COSINES[2];
+        const c4 = COSINES[3];
+        const c6 = COSINES[5];
+        const c7 = COSINES[6];
+        const s3 = SINES[2];
+        const s6 = SINES[5];
+        const s7 = SINES[6];
 
         // The implementation of the inverse DCT has to be exactly as described in the theora specification
         // 7.9.3.1 The 1D Inverse DCT
@@ -2065,7 +2144,7 @@ export class Frame {
      * @param {Array} dqc Dequantized DCT coefficients in natural order
      * @return {Array} An 8 × 8 array containing the decoded residual
      */
-    invertDCT2D(dqc) {
+    invertDCT2D(dqc: number[]): number[][] {
         // Output: residual
         const res = [];
 
@@ -2076,10 +2155,10 @@ export class Frame {
         let ri;
 
         // An 8-element array of 1D iDCT input values.
-        let y = [];
+        let y: number[] = [];
 
         // An 8-element array of 1D iDCT output values.
-        let x;
+        let x: number[];
 
         // Apply the 1d inverse DCT for each row
         for (ri = 0; ri < 8; ri += 1) {
@@ -2116,7 +2195,7 @@ export class Frame {
      * @param {Array} pred Predictor values to use for the current block
      * @param {Number} dc The dequantized DC coefficient of a block
      */
-    setPixels1(recp, pli, by, bx, pred, dc) {
+    setPixels1(recp: number[][], pli: number, by: number, bx: number, pred: number[][], dc: number): void {
         // The vertical pixel index in the block
         let biy;
 
@@ -2175,7 +2254,7 @@ export class Frame {
      * @param {Array} pred Predictor values to use for the current block
      * @param {Array} res The decoded residual for the current block
      */
-    setPixels2(recp, pli, by, bx, pred, res) {
+    setPixels2(recp: number[][], pli: number, by: number, bx: number, pred: number[][], res: number[][]): void {
         let biy;
         let bix;
         let py;
@@ -2219,7 +2298,7 @@ export class Frame {
      * @method reconstructComplete
      * @private
      */
-    reconstructComplete() {
+    reconstructComplete(): void {
         // The width of the current plane pixels
         let rpw;
 
@@ -2280,9 +2359,6 @@ export class Frame {
         // A quantization type index
         let qti;
 
-        // The quantization index of the DC coefficient
-        let qi0;
-
         // The quantization index of the AC coefficients
         let qi;
 
@@ -2326,25 +2402,26 @@ export class Frame {
         // the previous frame
         if (this.ftype !== 0) {
             // 2-level deep array cope
-            len = this.prevrefy.length;
+            len = this.prevrefy!.length;
             for (i = 0; i < len; i += 1) {
-                this.recy[i] = this.prevrefy[i].slice(0);
+                this.recy[i] = this.prevrefy![i].slice(0);
             }
 
-            len = this.prevrefcb.length;
+            len = this.prevrefcb!.length;
             for (i = 0; i < len; i += 1) {
-                this.reccb[i] = this.prevrefcb[i].slice(0);
+                this.reccb[i] = this.prevrefcb![i].slice(0);
             }
 
-            len = this.prevrefcr.length;
+            len = this.prevrefcr!.length;
             for (i = 0; i < len; i += 1) {
-                this.reccr[i] = this.prevrefcr[i].slice(0);
+                this.reccr[i] = this.prevrefcr![i].slice(0);
             }
         }
 
         recp = this.recy;
 
-        qi0 = this.qis[0];
+        // The quantization index of the DC coefficient
+        const qi0 = this.qis[0];
 
         rpw = this.rpyw;
         rph = this.rpyh;
@@ -2353,17 +2430,17 @@ export class Frame {
         len = this.codedBlocks.length;
         for (i = 0; i < len; i += 1) {
             bi = this.codedBlocks[i];
-            bri = tables.codedToRasterOrder[bi];
-            mbi = tables.biToMbi[bi];
-            rfi = constants.REFERENCE_FRAME_INDICIES[this.mbmodes[mbi]];
+            bri = this.tables.codedToRasterOrder[bi];
+            mbi = this.tables.biToMbi[bi];
+            rfi = REFERENCE_FRAME_INDICIES[this.mbmodes[mbi]];
             qti = this.mbmodes[mbi] === 1 ? 0 : 1;
 
             // Determine the current color plane
-            if (bi >= header.nlbs) {
+            if (bi >= this.header.nlbs) {
                 rpw = this.rpcw;
                 rph = this.rpch;
 
-                if (bi >= header.nlbs + header.ncbs) {
+                if (bi >= this.header.nlbs + this.header.ncbs) {
                     pli = 2;
                     recp = this.reccr;
                 } else {
@@ -2374,30 +2451,31 @@ export class Frame {
 
             // Calculate the absolute x and y pixel coordinates
             // of the lower left pixel in block bi
-            bx = ((bri - colorPlaneOffsets[pli]) * 8) % rpw;
-            by = (((bri - colorPlaneOffsets[pli]) * 8 - bx) / rpw) * 8;
+            bx = ((bri - this.colorPlaneOffsets[pli]) * 8) % rpw;
+            by = (((bri - this.colorPlaneOffsets[pli]) * 8 - bx) / rpw) * 8;
 
             // Get the pixel predictor corresponding
             // to the current frame type and color plane index
             if (rfi === 0) {
-                pred = constants.INTRA_PREDICTOR;
+                pred = INTRA_PREDICTOR;
             } else {
                 // Get the current plane of the reference frame
-                refp = this.referenceFrames[rfi][pli];
+                const refFrame = this.referenceFrames[rfi] as [number[][], number[][], number[][]];
+                refp = refFrame[pli];
 
                 if (pli > 0) {
-                    if (header.pf === 0) {
+                    if (this.header.pf === 0) {
                         divX = 4;
                         divY = 4;
-                    } else if (header.pf === 2) {
+                    } else if (this.header.pf === 2) {
                         divX = 4;
                     }
                 }
 
-                mvx = Math.floor(Math.abs(this.mvects[bi][0]) / divX) * util.sign(this.mvects[bi][0]);
-                mvy = Math.floor(Math.abs(this.mvects[bi][1]) / divY) * util.sign(this.mvects[bi][1]);
-                mvx2 = Math.ceil(Math.abs(this.mvects[bi][0]) / divX) * util.sign(this.mvects[bi][0]);
-                mvy2 = Math.ceil(Math.abs(this.mvects[bi][1]) / divY) * util.sign(this.mvects[bi][1]);
+                mvx = Math.floor(Math.abs(this.mvects[bi][0]) / divX) * sign(this.mvects[bi][0]);
+                mvy = Math.floor(Math.abs(this.mvects[bi][1]) / divY) * sign(this.mvects[bi][1]);
+                mvx2 = Math.ceil(Math.abs(this.mvects[bi][0]) / divX) * sign(this.mvects[bi][0]);
+                mvy2 = Math.ceil(Math.abs(this.mvects[bi][1]) / divY) * sign(this.mvects[bi][1]);
 
                 if (mvx === mvx2 && mvy === mvy2) {
                     pred = this.getWholePixelPredictor(rpw, rph, refp, bx, by, mvx, mvy);
@@ -2408,7 +2486,7 @@ export class Frame {
 
             if (this.ncoeffs[bi] < 2) {
                 // Get the DC quantization matrix
-                qmat = header.qmats[qti][pli][qi0];
+                qmat = this.header.qmats[qti][pli][qi0];
 
                 dc = (this.coeffs[bi][0] * qmat[0] + 15) >> 5;
                 // Truncate dc to a signed 16-bit representation
@@ -2437,14 +2515,12 @@ export class Frame {
      * @param {Number} l The limiting value
      * @return {Number}
      */
-    getLflim(r, l) {
-        let pl2;
-
+    getLflim(r: number, l: number): number {
         if (-l < r && r < l) {
             return r;
         }
 
-        pl2 = l * 2;
+        const pl2 = l * 2;
         if (r <= pl2 || pl2 <= r) {
             return 0;
         }
@@ -2466,7 +2542,7 @@ export class Frame {
      * @param {Number} fy The vertical pixel index of the lower-left corner of the area to be filtered
      * @param {Number} l The loop filter limit value
      */
-    filterHorizontal(recp, fx, fy, l) {
+    filterHorizontal(recp: number[][], fx: number, fy: number, l: number): void {
         // The edge detector response
         let r;
 
@@ -2525,7 +2601,7 @@ export class Frame {
      * @param {Number} fy The vertical pixel index of the lower-left corner of the area to be filtered
      * @param {Number} l The loop filter limit value
      */
-    filterVertical(recp, fx, fy, l) {
+    filterVertical(recp: number[][], fx: number, fy: number, l: number): void {
         // The edge detector response
         let r;
 
@@ -2580,7 +2656,7 @@ export class Frame {
      * @method filterLoopComplete
      * @private
      */
-    filterLoopComplete() {
+    filterLoopComplete(): void {
         // The width of the current plane of in pixels
         let rpw;
 
@@ -2602,9 +2678,6 @@ export class Frame {
         // The vertical pixel index of the lower-left corner of the area to be filtered
         let fy;
 
-        // The loop filter limit value
-        let l;
-
         // The color plane index of the current block
         let pli = 0;
 
@@ -2617,12 +2690,13 @@ export class Frame {
         // The current block index in raster order
         let bri;
 
-        l = header.lflims[this.qis[0]];
+        // The loop filter limit value
+        const l = this.header.lflims[this.qis[0]];
 
         // Loop through all blocks in raster order
-        for (bri = 0; bri < header.nbs; bri += 1) {
+        for (bri = 0; bri < this.header.nbs; bri += 1) {
             // Get the current block index in coded order
-            bi = tables.rasterToCodedOrder[bri];
+            bi = this.tables.rasterToCodedOrder[bri];
 
             if (this.bcoded[bi] !== 0) {
                 switch (pli) {
@@ -2645,8 +2719,8 @@ export class Frame {
 
                 // Calculate the absolute x and y pixel coordinates
                 // of the lower left pixel in block bi
-                bx = ((bri - colorPlaneOffsets[pli]) * 8) % rpw;
-                by = (((bri - colorPlaneOffsets[pli]) * 8 - bx) / rpw) * 8;
+                bx = ((bri - this.colorPlaneOffsets[pli]) * 8) % rpw;
+                by = (((bri - this.colorPlaneOffsets[pli]) * 8 - bx) / rpw) * 8;
 
                 if (bx > 0) {
                     fx = bx - 2;
@@ -2661,7 +2735,7 @@ export class Frame {
                 }
 
                 if (bx + 8 < rpw) {
-                    bj = tables.rasterToCodedOrder[bri + 1];
+                    bj = this.tables.rasterToCodedOrder[bri + 1];
                     if (this.bcoded[bj] === 0) {
                         fx = bx + 6;
                         fy = by;
@@ -2670,7 +2744,7 @@ export class Frame {
                 }
 
                 if (by + 8 < rph) {
-                    bj = tables.rasterToCodedOrder[bri + rpw / 8];
+                    bj = this.tables.rasterToCodedOrder[bri + rpw / 8];
                     if (this.bcoded[bj] === 0) {
                         fx = bx;
                         fy = by + 6;
@@ -2679,9 +2753,9 @@ export class Frame {
                 }
             }
 
-            if (bri >= header.nlbs + header.ncbs - 1) {
+            if (bri >= this.header.nlbs + this.header.ncbs - 1) {
                 pli = 2;
-            } else if (bri >= header.nlbs - 1) {
+            } else if (bri >= this.header.nlbs - 1) {
                 pli = 1;
             }
         }

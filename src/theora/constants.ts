@@ -1,4 +1,13 @@
-export const LONG_RUN_LENGTH_HUFFMAN_TABLE = [
+export interface HuffmanRunLength {
+    rbits: number;
+    rstart: number;
+}
+
+export type HuffmanVector = number;
+
+export type HuffmanTable<T> = [ T[][], number[] ];
+
+export const LONG_RUN_LENGTH_HUFFMAN_TABLE: HuffmanTable<HuffmanRunLength> = [
     // Huffman codes
     [
         // 1 bit
@@ -24,7 +33,7 @@ export const LONG_RUN_LENGTH_HUFFMAN_TABLE = [
     [0, 2, 6, 14, 30, 62]
 ];
 
-export const SHORT_RUN_LENGTH_HUFFMAN_TABLE = [
+export const SHORT_RUN_LENGTH_HUFFMAN_TABLE: HuffmanTable<HuffmanRunLength> = [
     // Huffman codes
     [
         // 1 bit
@@ -70,7 +79,7 @@ export const MACRO_BLOCK_MODE_SCHEMES = [
     [0, 5, 3, 4, 2, 1, 6, 7]
 ];
 
-export const MACRO_BLOCK_MODE_SCHEMES_HUFFMAN_TABLE = [
+export const MACRO_BLOCK_MODE_SCHEMES_HUFFMAN_TABLE: HuffmanTable<HuffmanVector> = [
     // Huffman codes
     [
         // 1 bits
@@ -99,7 +108,7 @@ export const MACRO_BLOCK_MODE_SCHEMES_HUFFMAN_TABLE = [
     [0, 2, 6, 14, 30, 62, 126, 254]
 ];
 
-export const MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE = [
+export const MOTION_VECTOR_COMPONENTS_HUFFMAN_TABLE: HuffmanTable<HuffmanVector> = [
     // Huffman codes
     [
         // 1 bits
@@ -258,7 +267,16 @@ export const REFERENCE_FRAME_INDICIES = [
     1
 ];
 
-export const DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE = {
+interface WeightsAndDivisors {
+    weights: number[];
+    divisor: number;
+}
+
+interface WeightsAndDivisorsTable {
+    [bitString: string]: WeightsAndDivisors;
+}
+
+export const DCPREDICTORS_WEIGHTS_AND_DIVISORS_TABLE: WeightsAndDivisorsTable = {
     1000: { weights: [1, 0, 0, 0], divisor: 1 },
     '0100': { weights: [0, 1, 0, 0], divisor: 1 },
     1100: { weights: [1, 0, 0, 0], divisor: 1 },
