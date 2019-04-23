@@ -1,11 +1,15 @@
 devDependencies:
   '@types/node': 11.13.6
+  '@types/pixelmatch': 4.0.0
+  '@types/pngjs': 3.3.2
   '@typescript-eslint/eslint-plugin': 1.6.0
   '@typescript-eslint/parser': 1.6.0
   ava: 1.4.1
   eslint: 6.0.0-alpha.0
   eslint-config-xo-typescript: 0.9.0
   eslint-import-resolver-node: 0.3.2
+  pixelmatch: 4.0.2
+  pngjs: 3.4.0
   typescript: 3.4.4
   xo: 0.24.0
 lockfileVersion: 5
@@ -378,6 +382,18 @@ packages:
     dev: true
     resolution:
       integrity: sha512-Xoo/EBzEe8HxTSwaZNLZjaW6M6tA/+GmD3/DZ6uo8qSaolE/9Oarko0oV1fVfrLqOz0tx0nXJB4rdD5c+vixLw==
+  /@types/pixelmatch/4.0.0:
+    dependencies:
+      '@types/node': 11.13.6
+    dev: true
+    resolution:
+      integrity: sha512-pOF+6b0UbePCuPv1BS2k1IEeTk8ae8mhNiHms05s5WM+xV47g8Fb7KQcMn1fkJ9ccbs2IDpgPv+fGmHHvHHnrA==
+  /@types/pngjs/3.3.2:
+    dependencies:
+      '@types/node': 11.13.6
+    dev: true
+    resolution:
+      integrity: sha512-/SBsv93rVnjByzcau24rBwb+N7BHFp2LateaXz1e7m7M0Wzck/ymXTNdWVrCtkuMbwTHAnfdc3X/I/5szsTEAA==
   /@typescript-eslint/eslint-plugin/1.6.0:
     dependencies:
       '@typescript-eslint/parser': 1.6.0
@@ -3369,6 +3385,13 @@ packages:
       node: '>=0.10.0'
     resolution:
       integrity: sha1-clVrgM+g1IqXToDnckjoDtT3+HA=
+  /pixelmatch/4.0.2:
+    dependencies:
+      pngjs: 3.4.0
+    dev: true
+    hasBin: true
+    resolution:
+      integrity: sha1-j0fc7FARtHe2fbA8JDvB8wheiFQ=
   /pkg-conf/2.1.0:
     dependencies:
       find-up: 2.1.0
@@ -3419,6 +3442,12 @@ packages:
       node: '>=6'
     resolution:
       integrity: sha512-t1Ax8KUvV3FFII8ltczPn2tJdjqbd1sIzu6t4JL7nQ3EyeL/lTrj5PWKb06ic5/6XYDr65rQ4uzQEGN70/6X5w==
+  /pngjs/3.4.0:
+    dev: true
+    engines:
+      node: '>=4.0.0'
+    resolution:
+      integrity: sha512-NCrCHhWmnQklfH4MtJMRjZ2a8c80qXeMlQMv2uVp9ISJMTt562SbGd6n2oq0PaPgKm7Z6pL9E2UlLIhC+SHL3w==
   /posix-character-classes/0.1.1:
     dev: true
     engines:
@@ -4532,11 +4561,15 @@ packages:
       integrity: sha512-VCIyR1wJoEBZUqk5PA+oOBF6ypbwh5aNB3I50guxAL/quggdfs4TtNHQrSazFA3fYZ+tEqfs0zIGlv0c/rgjbQ==
 specifiers:
   '@types/node': 11.13.6
+  '@types/pixelmatch': 4.0.0
+  '@types/pngjs': 3.3.2
   '@typescript-eslint/eslint-plugin': 1.6.0
   '@typescript-eslint/parser': 1.6.0
   ava: 1.4.1
   eslint: 6.0.0-alpha.0
   eslint-config-xo-typescript: 0.9.0
   eslint-import-resolver-node: 0.3.2
+  pixelmatch: 4.0.2
+  pngjs: 3.4.0
   typescript: 3.4.4
   xo: 0.24.0

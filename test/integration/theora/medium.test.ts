@@ -1,8 +1,18 @@
 import path from 'path';
 import test from 'ava';
+import { PNG } from 'pngjs';
+import pixelmatch from 'pixelmatch';
 import { TransportStream } from '../../../src/ogg/transportStream';
 import { Decoder } from '../../../src/theora/decoder';
-import { readOggFile, decodeAllFramesForFile } from '../../lib/files';
+import {
+    savePngDiff,
+    readOggFile,
+    decodeAllFramesForFile,
+    forAllDecodedFrames,
+    frameToPng,
+    readPng
+} from '../../lib/files';
+import { Frame } from '../../../src/theora/frame';
 
 const mediumComplexOggFile = path.resolve(__dirname, '../../fixtures/trailer_400p.ogg');
 
@@ -31,4 +41,31 @@ test('decodes all frames without errors', async (t) => {
     const frameCount = await decodeAllFramesForFile(mediumComplexOggFile);
 
     t.is(frameCount, 813);
+});
+
+test('matches the reference pictures exactly', async (t) => {
+    const byteStream = await readOggFile(mediumComplexOggFile);
+
+    t.plan(813);
+
+    let i = 0;
+    await forAllDecodedFrames(byteStream, async (frame: Frame, decoder: Decoder) => {
+        const actualPng = frameToPng(frame, decoder);
+        const expectedPng = await readPng(`./test/reference-pictures/trailer_400p/frame_${i}.png`);
+        const { width, height } = expectedPng;
+        const diff = new PNG({ width, height });
+
+        const numberOfMismatchedPixels = pixelmatch(expectedPng.data, actualPng.data, diff.data, width, height, {
+            threshold: 0.0
+        });
+
+        if (numberOfMismatchedPixels > 0) {
+            const diffPath = await savePngDiff(`./trailer_400p_frame_${i}_diff.png`, diff);
+            t.log(`Mismatched frame number ${i}. Diff file has been saved at ${diffPath}.`);
+        }
+
+        t.is(numberOfMismatchedPixels, 0);
+
+        i += 1;
+    });
 });

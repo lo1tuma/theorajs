@@ -1,10 +1,14 @@
+import path from 'path';
 import { promises as fs } from 'fs';
+import { PNG } from 'pngjs';
 import { TransportStream } from '../../src/ogg/transportStream';
 import { ByteStream } from '../../src/stream/byteStream';
 import { Decoder } from '../../src/theora/decoder';
 import { isTheora } from '../../src/theora/header';
 import { LogicalStream } from '../../src/ogg/logicalStream';
 import { Packet } from '../../src/ogg/packet';
+import { Frame } from '../../src/theora/frame';
+import { yCbCrToRGB } from '../../src/theora/util';
 
 export async function readOggFile(file: string): Promise<ByteStream> {
     const data = (await fs.readFile(file)).toString('binary');
@@ -19,7 +23,7 @@ function findTheoraStream(streams: LogicalStream[]): LogicalStream | undefined {
     return streams.find((stream) => isTheora(stream.getFirstPacket() as Packet));
 }
 
-export async function decodeAllFrames(byteStream: ByteStream): Promise<number> {
+export function decodeAllFrames(byteStream: ByteStream): number {
     const transportStream = new TransportStream(byteStream);
 
     const videoStream = findTheoraStream(transportStream.findLogicalStreams());
@@ -40,7 +44,82 @@ export async function decodeAllFrames(byteStream: ByteStream): Promise<number> {
     return frameCount;
 }
 
+type Callback = (frame: Frame, decoder: Decoder) => Promise<void>;
+
+export async function forAllDecodedFrames(byteStream: ByteStream, callback: Callback): Promise<void> {
+    const transportStream = new TransportStream(byteStream);
+
+    const videoStream = findTheoraStream(transportStream.findLogicalStreams());
+
+    if (!videoStream) {
+        throw new Error('No Theora stream found in the ogg stream');
+    }
+
+    const decoder = new Decoder(videoStream);
+    let frame = decoder.nextFrame();
+
+    while (frame !== false) {
+        // eslint-disable-next-line no-await-in-loop
+        await callback(frame, decoder);
+        frame = decoder.nextFrame();
+    }
+}
+
 export async function decodeAllFramesForFile(file: string): Promise<number> {
     const byteStream = await readOggFile(file);
     return decodeAllFrames(byteStream);
+}
+
+export function frameToPng(frame: Frame, decoder: Decoder): PNG {
+    const png = new PNG({
+        width: decoder.width,
+        height: decoder.height,
+        colorType: 2,
+        inputColorType: 2,
+        inputHasAlpha: false
+    });
+
+    for (let y = 0; y < decoder.height; y += 1) {
+        for (let x = 0; x < decoder.width; x += 1) {
+            const rgb = yCbCrToRGB(
+                frame.recy[y][x],
+                frame.reccb[(y / 2) | 0][(x / 2) | 0],
+                frame.reccr[(y / 2) | 0][(x / 2) | 0]
+            );
+            const pixelX = x;
+            const pixelY = decoder.height - y - 1;
+
+            const index = (decoder.width * pixelY + pixelX) * 4;
+
+            png.data[index] = rgb[0];
+            png.data[index + 1] = rgb[1];
+            png.data[index + 2] = rgb[2];
+            png.data[index + 3] = 255;
+        }
+    }
+
+    return png;
+}
+
+export async function writePng(file: string, frame: Frame, decoder: Decoder): Promise<void> {
+    const png = frameToPng(frame, decoder);
+    const data = PNG.sync.write(png);
+
+    await fs.writeFile(path.resolve(process.cwd(), file), data);
+}
+
+export async function savePngDiff(file: string, png: PNG): Promise<string> {
+    const data = PNG.sync.write(png);
+    const outputDir = path.resolve(process.cwd(), './build/test-output/integration');
+    const diffPath = path.resolve(outputDir, file);
+
+    await fs.mkdir(outputDir, { recursive: true });
+    await fs.writeFile(diffPath, data);
+
+    return diffPath;
+}
+
+export async function readPng(file: string): Promise<PNG> {
+    const data = await fs.readFile(path.resolve(process.cwd(), file));
+    return PNG.sync.read(data);
 }
