@@ -8,7 +8,7 @@ import { isTheora } from '../../src/theora/header';
 import { LogicalStream } from '../../src/ogg/logicalStream';
 import { Packet } from '../../src/ogg/packet';
 import { Frame } from '../../src/theora/frame';
-import { yCbCrToRGB } from '../../src/theora/util';
+import { RGBRenderer } from '../../src/player/rgbRenderer';
 
 export async function readOggFile(file: string): Promise<ByteStream> {
     const data = (await fs.readFile(file)).toString('binary');
@@ -65,12 +65,38 @@ export async function forAllDecodedFrames(byteStream: ByteStream, callback: Call
     }
 }
 
+export async function forAllRGBAFrames(
+    byteStream: ByteStream,
+    callback: (frame: Uint8Array, decoder: Decoder, frameIndex: number) => Promise<void>
+): Promise<void> {
+    const transportStream = new TransportStream(byteStream);
+
+    const videoStream = findTheoraStream(transportStream.findLogicalStreams());
+
+    if (!videoStream) {
+        throw new Error('No Theora stream found in the ogg stream');
+    }
+
+    const decoder = new Decoder(videoStream);
+    const renderer = new RGBRenderer(decoder, { withAlphaChannel: true });
+    let frame = renderer.nextRGBFrame();
+    let index = 0;
+
+    while (frame !== false) {
+        // eslint-disable-next-line no-await-in-loop
+        await callback(frame, decoder, index);
+
+        frame = renderer.nextRGBFrame();
+        index += 1;
+    }
+}
+
 export async function decodeAllFramesForFile(file: string): Promise<number> {
     const byteStream = await readOggFile(file);
     return decodeAllFrames(byteStream);
 }
 
-export function frameToPng(frame: Frame, decoder: Decoder): PNG {
+export function frameToPng(frame: Uint8Array, decoder: Decoder): PNG {
     const png = new PNG({
         width: decoder.width,
         height: decoder.height,
@@ -79,29 +105,12 @@ export function frameToPng(frame: Frame, decoder: Decoder): PNG {
         inputHasAlpha: false
     });
 
-    for (let y = 0; y < decoder.height; y += 1) {
-        for (let x = 0; x < decoder.width; x += 1) {
-            const rgb = yCbCrToRGB(
-                frame.recy[y][x],
-                frame.reccb[(y / 2) | 0][(x / 2) | 0],
-                frame.reccr[(y / 2) | 0][(x / 2) | 0]
-            );
-            const pixelX = x;
-            const pixelY = decoder.height - y - 1;
-
-            const index = (decoder.width * pixelY + pixelX) * 4;
-
-            png.data[index] = rgb[0];
-            png.data[index + 1] = rgb[1];
-            png.data[index + 2] = rgb[2];
-            png.data[index + 3] = 255;
-        }
-    }
+    png.data = frame as Buffer;
 
     return png;
 }
 
-export async function writePng(file: string, frame: Frame, decoder: Decoder): Promise<void> {
+export async function writePng(file: string, frame: Uint8Array, decoder: Decoder): Promise<void> {
     const png = frameToPng(frame, decoder);
     const data = PNG.sync.write(png);
 
