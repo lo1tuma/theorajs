@@ -44,6 +44,28 @@ export function decodeAllFrames(byteStream: ByteStream): number {
     return frameCount;
 }
 
+export function decodeAndConvertAllFrames(byteStream: ByteStream): number {
+    const transportStream = new TransportStream(byteStream);
+
+    const videoStream = findTheoraStream(transportStream.findLogicalStreams());
+
+    if (!videoStream) {
+        throw new Error('No Theora stream found in the ogg stream');
+    }
+
+    const decoder = new Decoder(videoStream);
+    const renderer = new RGBRenderer(decoder);
+    let frameCount = 0;
+    let frame = renderer.nextRGBFrame();
+
+    while (frame !== false) {
+        frame = renderer.nextRGBFrame();
+        frameCount += 1;
+    }
+
+    return frameCount;
+}
+
 type Callback = (frame: Frame, decoder: Decoder) => Promise<void>;
 
 export async function forAllDecodedFrames(byteStream: ByteStream, callback: Callback): Promise<void> {
