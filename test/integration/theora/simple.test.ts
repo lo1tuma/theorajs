@@ -1,7 +1,7 @@
 import path from 'path';
 import test from 'ava';
-import { TransportStream } from '../../../src/ogg/transportStream';
-import { Decoder } from '../../../src/theora/decoder';
+import { TransportStream } from '../../../src/lib/ogg/transportStream';
+import { Decoder } from '../../../src/lib/theora/decoder';
 import { readOggFile, decodeAllFramesForFile } from '../../lib/files';
 
 const simpleOggFile = path.resolve(__dirname, '../../fixtures/320x240.ogg');

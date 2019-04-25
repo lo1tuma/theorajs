@@ -1,6 +1,6 @@
 import test from 'ava';
-import { TransportStream } from '../../../src/ogg/transportStream';
-import { ByteStream } from '../../../src/stream/byteStream';
+import { TransportStream } from '../../../../src/lib/ogg/transportStream';
+import { ByteStream } from '../../../../src/lib/stream/byteStream';
 
 interface PageDataOverrides {
     headerType?: number;

@@ -1,8 +1,8 @@
 import test from 'ava';
-import { LogicalStream } from '../../../src/ogg/logicalStream';
-import { TransportStream } from '../../../src/ogg/transportStream';
-import { Page } from '../../../src/ogg/page';
-import { Packet } from '../../../src/ogg/packet';
+import { LogicalStream } from '../../../../src/lib/ogg/logicalStream';
+import { TransportStream } from '../../../../src/lib/ogg/transportStream';
+import { Page } from '../../../../src/lib/ogg/page';
+import { Packet } from '../../../../src/lib/ogg/packet';
 
 interface PageOverrides {
     beginOfStream?: boolean;

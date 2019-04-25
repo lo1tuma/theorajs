@@ -1,0 +1,12 @@
+{
+    "extends": "../tsconfig.base.json",
+    "compilerOptions": {
+        "rootDir": "../"
+    },
+    "references": [
+        { "path": "../src/lib" },
+        { "path": "../src/browser/dom" },
+        { "path": "../src/browser/worker" }
+    ],
+    "include": [ "./**/*" ]
+}

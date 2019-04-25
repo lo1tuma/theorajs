@@ -1,6 +1,6 @@
-import { ByteStream } from './byteStream';
+import { ByteStream } from '../../lib/stream/byteStream';
 
-const fetch = function(url: string, callback: Function): void {
+const fetch = function(url: string, callback: (byteString: string) => void): void {
     // To-do: ajax: cross browser compatibility
     const req = new XMLHttpRequest();
 
@@ -43,10 +43,9 @@ export class AjaxStream extends ByteStream {
      * @method fetch
      * @param {Function} callback
      */
-    fetch(callback: Function): void {
-        const self = this;
+    fetch(callback: () => void): void {
         fetch(this.url, (data: string) => {
-            self.setData(data);
+            this.setData(data);
             callback();
         });
     }

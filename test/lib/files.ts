@@ -1,14 +1,14 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import { PNG } from 'pngjs';
-import { TransportStream } from '../../src/ogg/transportStream';
-import { ByteStream } from '../../src/stream/byteStream';
-import { Decoder } from '../../src/theora/decoder';
-import { isTheora } from '../../src/theora/header';
-import { LogicalStream } from '../../src/ogg/logicalStream';
-import { Packet } from '../../src/ogg/packet';
-import { Frame } from '../../src/theora/frame';
-import { RGBRenderer } from '../../src/player/rgbRenderer';
+import { TransportStream } from '../../src/lib/ogg/transportStream';
+import { ByteStream } from '../../src/lib/stream/byteStream';
+import { Decoder } from '../../src/lib/theora/decoder';
+import { isTheora } from '../../src/lib/theora/header';
+import { LogicalStream } from '../../src/lib/ogg/logicalStream';
+import { Packet } from '../../src/lib/ogg/packet';
+import { Frame } from '../../src/lib/theora/frame';
+import { RGBRenderer } from '../../src/lib/player/rgbRenderer';
 
 export async function readOggFile(file: string): Promise<ByteStream> {
     const data = (await fs.readFile(file)).toString('binary');

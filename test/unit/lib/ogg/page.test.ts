@@ -1,6 +1,6 @@
 import test from 'ava';
-import { Page } from '../../../src/ogg/page';
-import { ByteStream } from '../../../src/stream/byteStream';
+import { Page } from '../../../../src/lib/ogg/page';
+import { ByteStream } from '../../../../src/lib/stream/byteStream';
 
 function createStream(data: string): ByteStream {
     const stream = new ByteStream();

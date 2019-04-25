@@ -1,5 +1,5 @@
 import test from 'ava';
-import { Packet } from '../../../src/ogg/packet';
+import { Packet } from '../../../../src/lib/ogg/packet';
 
 test('getLength() returns 0 when no segment has been added yet', (t) => {
     const packet = new Packet();

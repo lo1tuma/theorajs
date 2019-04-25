@@ -1,25 +1,14 @@
 {
     "compilerOptions": {
-        "target": "es2019",
-        "module": "commonjs",
-        "declaration": true,
-        "outDir": "./build",
-        "rootDir": "./.",
-        "incremental": true,
-        "strict": true,
-        "noImplicitAny": true,
-        "strictNullChecks": true,
-        "strictFunctionTypes": true,
-        "strictBindCallApply": true,
-        "strictPropertyInitialization": true,
-        "noImplicitThis": true,
-        "alwaysStrict": true,
-        "moduleResolution": "node",
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true
+        "outDir": "./build/",
+        "rootDir": "."
     },
-    "include": [
-        "./src/**/*",
-        "./test/**/*"
+    "files": [],
+    "include": [],
+    "references": [
+        { "path": "./src/browser/dom" },
+        { "path": "./src/browser/worker" },
+        { "path": "./src/lib" },
+        { "path": "./test" }
     ]
 }

@@ -1,6 +1,6 @@
 import path from 'path';
 import test from 'ava';
-import { TransportStream } from '../../../src/ogg/transportStream';
+import { TransportStream } from '../../../src/lib/ogg/transportStream';
 import { readOggFile } from '../../lib/files';
 
 const simpleFile = path.resolve(__dirname, '../../fixtures/320x240.ogg');

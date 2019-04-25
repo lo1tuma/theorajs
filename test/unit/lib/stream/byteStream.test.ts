@@ -1,5 +1,5 @@
 import test from 'ava';
-import { ByteStream } from '../../../src/stream/byteStream';
+import { ByteStream } from '../../../../src/lib/stream/byteStream';
 
 test('reads the 8-bit value of the data string', (t) => {
     const stream = new ByteStream();

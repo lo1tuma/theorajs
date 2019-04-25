@@ -2,8 +2,8 @@ import path from 'path';
 import test from 'ava';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
-import { TransportStream } from '../../../src/ogg/transportStream';
-import { Decoder } from '../../../src/theora/decoder';
+import { TransportStream } from '../../../src/lib/ogg/transportStream';
+import { Decoder } from '../../../src/lib/theora/decoder';
 import {
     savePngDiff,
     readOggFile,

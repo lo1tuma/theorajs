@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "es2019",
+        "module": "commonjs",
+        "declaration": true,
+        "outDir": "./build/",
+        "incremental": true,
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "strictPropertyInitialization": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+        "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "composite": true,
+        "types": [],
+        "typeRoots": [],
+        "lib": [ "es5", "ES2015", "ES2016", "ES2017", "ES2018" ]
+    }
+}

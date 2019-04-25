@@ -32,7 +32,7 @@
     },
     "scripts": {
         "lint": "xo",
-        "build": "tsc && cp -R test/fixtures build/test/fixtures",
+        "build": "tsc --build && cp -R test/fixtures build/test/fixtures",
         "pretest:unit": "pnpm run build",
         "test:unit": "ava build/test/unit/**/*.test.js",
         "pretest:integration": "pnpm run build",

@@ -1,6 +1,6 @@
 import path from 'path';
 import { forAllRGBAFrames, readOggFile, writePng } from '../lib/files';
-import { Decoder } from '../../src/theora/decoder';
+import { Decoder } from '../../src/lib/theora/decoder';
 
 const mediumComplexOggFile = path.resolve(__dirname, '../fixtures/trailer_400p.ogg');
 
