@@ -45,20 +45,11 @@
         "space": 4,
         "prettier": true,
         "nodeVersion": "11",
-        "extends": "xo-typescript",
         "extensions": [
             "js",
             "ts"
         ],
         "rules": {
-            "@typescript-eslint/indent": [
-                "error",
-                4,
-                {
-                    "SwitchCase": 1
-                }
-            ],
-            "@typescript-eslint/member-naming": "off",
             "unicorn/filename-case": [
                 "error",
                 {
@@ -74,16 +65,36 @@
         },
         "overrides": [
             {
+                "files": "**/*.ts",
+                "extends": "xo-typescript",
+                "rules": {
+                    "@typescript-eslint/indent": [
+                        "error",
+                        4,
+                        {
+                            "SwitchCase": 1
+                        }
+                    ],
+                    "@typescript-eslint/member-naming": "off"
+                }
+            },
+            {
                 "files": "test/**/*",
-                "envs": [ "node" ]
+                "envs": [
+                    "node"
+                ]
             },
             {
                 "files": "src/browser/dom/**/*",
-                "envs": [ "browser" ]
+                "envs": [
+                    "browser"
+                ]
             },
             {
                 "files": "src/browser/worker/**/*",
-                "envs": [ "worker" ]
+                "envs": [
+                    "worker"
+                ]
             }
         ]
     },
