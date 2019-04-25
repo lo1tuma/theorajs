@@ -73,9 +73,8 @@ export class LogicalStream {
         }
 
         const packet = new Packet();
-        let segment: false | ReadonlyArray<number>;
 
-        segment = this.nextSegment();
+        let segment = this.nextSegment();
         if (!segment) {
             return false;
         }
@@ -109,7 +108,7 @@ export class LogicalStream {
      *	set to the page, in case of a page spanning packet.
      * @return {Array}
      */
-    nextSegment(checkForContinuation?: boolean): false | ReadonlyArray<number> {
+    nextSegment(checkForContinuation?: boolean): false | Uint8Array {
         let ret;
 
         // Check for pagebreak

@@ -1,5 +1,5 @@
 export class Packet {
-    public data: ReadonlyArray<number>;
+    public data: Uint8Array;
 
     private offset: number;
 
@@ -11,7 +11,7 @@ export class Packet {
      * @constructor
      */
     constructor() {
-        this.data = [];
+        this.data = new Uint8Array(0);
         this.offset = 0;
     }
 
@@ -21,13 +21,18 @@ export class Packet {
      * @method addSegment
      * @param {Array} segment Data array of the segment
      */
-    addSegment(segment: ReadonlyArray<number>): void {
+    addSegment(segment: Uint8Array): void {
         if (segment.length === 0) {
             // Don't add zero length segments
             return;
         }
 
-        this.data = this.data.concat(segment);
+        const result = new Uint8Array(this.data.length + segment.length);
+
+        result.set(this.data, 0);
+        result.set(segment, this.data.length);
+
+        this.data = result;
     }
 
     /**

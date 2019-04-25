@@ -1,24 +1,5 @@
 import { ByteStream } from '../../lib/stream/byteStream';
 
-const fetch = function(url: string, callback: (byteString: string) => void): void {
-    // To-do: ajax: cross browser compatibility
-    const req = new XMLHttpRequest();
-
-    // XHR binary charset
-    req.overrideMimeType('text/plain; charset=x-user-defined');
-    req.open('GET', url, true);
-
-    req.onreadystatechange = function() {
-        if (req.readyState === 4) {
-            if (typeof callback === 'function') {
-                callback(req.responseText);
-            }
-        }
-    };
-
-    req.send(null);
-};
-
 export class AjaxStream extends ByteStream {
     private url: string;
 
@@ -44,9 +25,13 @@ export class AjaxStream extends ByteStream {
      * @param {Function} callback
      */
     fetch(callback: () => void): void {
-        fetch(this.url, (data: string) => {
-            this.setData(data);
-            callback();
+        fetch(this.url, { method: 'GET' }).then((response) => {
+            if (response.ok) {
+                response.arrayBuffer().then((buffer) => {
+                    this.setData(buffer);
+                    callback();
+                });
+            }
         });
     }
 }

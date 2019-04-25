@@ -1,14 +1,11 @@
-interface UInt64 {
-    lowBits: number;
-    highBits: number;
-}
-
 export class ByteStream {
     private index: number;
 
     private length: number;
 
-    private data: string;
+    private data: DataView;
+
+    private byteView: Uint8Array;
 
     /**
      * ByteStream
@@ -21,18 +18,14 @@ export class ByteStream {
     constructor() {
         this.index = 0;
         this.length = 0;
-        this.data = '';
+        this.data = new DataView(new ArrayBuffer(0));
+        this.byteView = new Uint8Array(0);
     }
 
-    /**
-     * Set the data.
-     *
-     * @method setData
-     * @param {String} data
-     */
-    setData(data: string): void {
-        this.data = data;
-        this.length = data.length;
+    setData(buffer: ArrayBuffer): void {
+        this.data = new DataView(buffer);
+        this.byteView = new Uint8Array(buffer);
+        this.length = this.data.byteLength;
     }
 
     /**
@@ -42,7 +35,7 @@ export class ByteStream {
      * @return {Number}
      */
     next8(): number {
-        const val = this.data.charCodeAt(this.index) & 0xff;
+        const val = this.data.getUint8(this.index);
 
         this.index += 1;
         return val;
@@ -56,14 +49,10 @@ export class ByteStream {
      * @return {Number}
      */
     next16(littleEndian?: boolean): number {
-        const b1 = this.next8();
-        const b2 = this.next8();
+        const val = this.data.getUint16(this.index, littleEndian);
 
-        if (littleEndian) {
-            return (b2 << 8) | b1;
-        }
-
-        return (b1 << 8) | b2;
+        this.index += 2;
+        return val;
     }
 
     /**
@@ -93,16 +82,10 @@ export class ByteStream {
      * @return {Number}
      */
     next32(littleEndian?: boolean): number {
-        const b1 = this.next8();
-        const b2 = this.next8();
-        const b3 = this.next8();
-        const b4 = this.next8();
+        const val = this.data.getUint32(this.index, littleEndian);
 
-        if (littleEndian) {
-            return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
-        }
-
-        return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
+        this.index += 4;
+        return val;
     }
 
     /**
@@ -114,27 +97,12 @@ export class ByteStream {
      * @param {Boolean} [littleEndian=false] Defines the byte-order
      * @return {Object}
      */
-    next64(littleEndian?: boolean): UInt64 {
-        const b1 = this.next8();
-        const b2 = this.next8();
-        const b3 = this.next8();
-        const b4 = this.next8();
-        const b5 = this.next8();
-        const b6 = this.next8();
-        const b7 = this.next8();
-        const b8 = this.next8();
+    next64(littleEndian?: boolean): number {
+        const val = this.data.getFloat64(this.index, littleEndian);
 
-        if (littleEndian) {
-            return {
-                lowBits: (b4 << 24) | (b3 << 16) | (b2 << 8) | b1,
-                highBits: (b8 << 24) | (b7 << 16) | (b6 << 8) | b5
-            };
-        }
+        this.index += 8;
 
-        return {
-            lowBits: (b5 << 24) | (b6 << 16) | (b7 << 8) | b8,
-            highBits: (b1 << 24) | (b2 << 16) | (b3 << 8) | b4
-        };
+        return val;
     }
 
     /**
@@ -145,18 +113,10 @@ export class ByteStream {
      * @param {Number} n Numer of values
      * @return {Array}
      */
-    nextArray(n: number): number[] {
-        const bytes = [];
-        let i;
+    nextArray(n: number): Uint8Array {
+        const bytes = this.byteView.subarray(this.index, this.index + n);
 
-        // Check if n is out of boundaries
-        if (this.index + n >= this.length) {
-            n = this.length - this.index;
-        }
-
-        for (i = 0; i < n; i += 1) {
-            bytes[i] = this.next8();
-        }
+        this.index += n;
 
         return bytes;
     }

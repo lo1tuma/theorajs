@@ -11,10 +11,11 @@ import { Frame } from '../../src/lib/theora/frame';
 import { RGBRenderer } from '../../src/lib/player/rgbRenderer';
 
 export async function readOggFile(file: string): Promise<ByteStream> {
-    const data = (await fs.readFile(file)).toString('binary');
+    const buffer = await fs.readFile(file);
+    const arrayBuffer = buffer.buffer;
     const byteStream = new ByteStream();
 
-    byteStream.setData(data);
+    byteStream.setData(arrayBuffer);
 
     return byteStream;
 }

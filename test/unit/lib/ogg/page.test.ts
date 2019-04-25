@@ -4,8 +4,15 @@ import { ByteStream } from '../../../../src/lib/stream/byteStream';
 
 function createStream(data: string): ByteStream {
     const stream = new ByteStream();
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(data);
+    const minSize = 255;
+    const buffer = new ArrayBuffer(Math.max(data.length, minSize));
+    const view = new Uint8Array(buffer);
 
-    stream.setData(data);
+    view.set(bytes, 0);
+
+    stream.setData(view.buffer);
 
     return stream;
 }
@@ -81,10 +88,7 @@ test('returns false when the page is not the last page within a stream', (t) => 
 test('decodes and expose the granule position', (t) => {
     const page = createValidPage([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
 
-    t.deepEqual(page.granulePosition, {
-        lowBits: 67305985,
-        highBits: 134678021
-    });
+    t.is(page.granulePosition, 5.447603722011605e-270);
 });
 
 test('decodes and expose the serial number', (t) => {
@@ -165,5 +169,5 @@ test('decodes and expose the segments', (t) => {
         1
     ]);
 
-    t.deepEqual(page.segments, [[1], [1, 1], [1, 1, 1]]);
+    t.deepEqual(page.segments, [new Uint8Array([1]), new Uint8Array([1, 1]), new Uint8Array([1, 1, 1])]);
 });

@@ -8,7 +8,7 @@ export class Page {
 
     public headerType: number;
 
-    public granulePosition: { lowBits: number; highBits: number };
+    public granulePosition: number;
 
     public serialNumber: number;
 
@@ -20,7 +20,7 @@ export class Page {
 
     public segmentTable: number[];
 
-    public segments: number[][];
+    public segments: Uint8Array[];
 
     public headerLength: number;
 
