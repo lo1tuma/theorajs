@@ -21,13 +21,13 @@ function initCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
     return ctx;
 }
 
-function drawDefaultBackground(context: CanvasRenderingContext2D, width: number, height: number) {
+function drawDefaultBackground(context: CanvasRenderingContext2D, width: number, height: number): void {
     context.fillStyle = '#000000';
     context.fillRect(0, 0, width, height);
 }
 
 function removeFromDom(elemId: string, child: HTMLElement): void {
-    const element = document.getElementById(elemId);
+    const element = document.querySelector(`#${elemId}`);
 
     if (element) {
         element.removeChild(child);
@@ -35,7 +35,7 @@ function removeFromDom(elemId: string, child: HTMLElement): void {
 }
 
 function addToDom(elemId: string, child: HTMLElement): void {
-    const element = document.getElementById(elemId);
+    const element = document.querySelector(`#${elemId}`);
 
     if (element) {
         element.append(child);
@@ -87,7 +87,13 @@ export class TheoraPlayer {
      * @param {String} Element id
      * elemid
      */
-    constructor(url: string, elemId: string, workerPath: string, onStart: () => void, onStop: (cnt: number, framerate: number) => void) {
+    constructor(
+        url: string,
+        elemId: string,
+        workerPath: string,
+        onStart: () => void,
+        onStop: (cnt: number, framerate: number) => void
+    ) {
         this.cnt = 0;
         this.canvas = document.createElement('canvas');
         this.context = initCanvas(this.canvas);
@@ -134,11 +140,11 @@ export class TheoraPlayer {
         this.interval = window.setInterval(this.draw, 1000 / data.framerate);
     }
 
-    clear() {
+    clear(): void {
         removeFromDom(this.elemId, this.canvas);
     }
 
-    stop() {
+    stop(): void {
         window.clearInterval(this.interval);
         this.onStopCallback(this.cnt, this.info.framerate);
     }
@@ -149,7 +155,7 @@ export class TheoraPlayer {
         if (frame) {
             this.context.putImageData(frame, 0, 0);
         }
-    }
+    };
 
     private listen = (event: MessageEvent): void => {
         const msg = event.data;
@@ -172,10 +178,9 @@ export class TheoraPlayer {
         }
 
         if (msg.type === 'data') {
-            console.log('frame ' + (this.cnt + 1) + ' decoded');
+            console.log(`frame ${this.cnt + 1} decoded`);
             this.cnt += 1;
             this.addFrame(msg.frame);
         }
-    }
-
+    };
 }

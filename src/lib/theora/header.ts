@@ -103,11 +103,13 @@ function buildSubtree(
     }
 
     hbits += '0';
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     numberOfHuffmanCodes = buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) as number;
 
     // Remove last char
     hbits = hbits.slice(0, -1);
     hbits += '1';
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     numberOfHuffmanCodes = buildSubtree(hbits, reader, hts, hti, numberOfHuffmanCodes) as number;
 
     // Remove last char
@@ -676,37 +678,37 @@ export class Header {
      */
     private decodeQuantizationParameters(reader: Bitstream): void {
         // A quantization type index
-        let qti;
+        let qti: number;
 
         // A quantization type index
-        let qtj;
+        let qtj: number;
 
         // A color plane index
-        let pli;
+        let pli: number;
 
         // A color plane index
-        let plj;
+        let plj: number;
 
         // The quantization index
-        let qi;
+        let qi: number;
 
         // The base matrix index
-        let bmi;
+        let bmi: number;
 
         // A base matrix index
-        let bmj;
+        let bmj: number;
 
         // The quant range index
-        let qri;
+        let qri: number;
 
         // The size of fields to read
-        let nbits;
+        let nbits: number;
 
         // Flag that indicates a new set of quant ranges will be defined
-        let newqr;
+        let newqr: number;
 
         // Flag that indicates the quant ranges to copy
-        let rpqr;
+        let rpqr: number;
 
         // Get the acscale values
         nbits = reader.nextBits(4) + 1;
@@ -812,7 +814,7 @@ export class Header {
         const qmat = [];
 
         // The quant range index
-        let qri;
+        let qri: number;
 
         // The left end-point of the qi range
         let qiStart = 0;

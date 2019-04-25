@@ -549,6 +549,7 @@ export class Frame {
                 }
             } else if (mScheme !== 7) {
                 // Get the alphabet from a predefined table
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                 mAlphabet = MACRO_BLOCK_MODE_SCHEMES[mScheme] as number[];
             }
 
@@ -1033,16 +1034,16 @@ export class Frame {
      */
     decodeCoefficientToken(token: number, tis: number[], bi: number, ti: number): void {
         // A flag indicating the sign of the current coefficient
-        let sign;
+        let sign: number;
 
         // The magnitude of the current coefficient
-        let mag;
+        let mag: number;
 
         // The length of the current zero run
-        let rlen;
+        let rlen: number;
 
         // Another token index
-        let tj;
+        let tj: number;
 
         switch (token) {
             case 7:
@@ -1620,31 +1621,31 @@ export class Frame {
      */
     invertDCPrediction(): void {
         // The predicted DC value for the current block
-        let dcpred;
+        let dcpred: number;
 
         // The most recently decoded DC values
         const lastdc = [];
 
         // The actual DC value for the current block
-        let dc;
+        let dc: number;
 
         // The index of the current block in coded order
-        let bi;
+        let bi: number;
 
         // The index of the current block in raster order
-        let bri;
+        let bri: number;
 
         // Cached length for a loop
-        let len;
+        let len: number;
 
         // The index of the macro block containing block bi
-        let mbi;
+        let mbi: number;
 
         // The index of the reference frame
-        let rfi;
+        let rfi: number;
 
         // The index of the current color plane
-        let pli;
+        let pli: number;
 
         for (pli = 0; pli < 3; pli += 1) {
             lastdc[0] = 0;
@@ -1706,16 +1707,16 @@ export class Frame {
         const pred: number[][] = [];
 
         // The horizontal pixel index in the block
-        let bix;
+        let bix: number;
 
         // The vertical pixel index in the block
-        let biy;
+        let biy: number;
 
         // The horizontal pixel index in the reference frame
-        let rx;
+        let rx: number;
 
         // The vertical pixel index in the reference frame
-        let ry;
+        let ry: number;
 
         // The vertical component of the moved pixel
         const my = by + mvy;
@@ -1801,22 +1802,22 @@ export class Frame {
         const pred: number[][] = [];
 
         // The horizontal pixel index in the block
-        let bix;
+        let bix: number;
 
         // The vertical pixel index in the block
-        let biy;
+        let biy: number;
 
         // The first horizontal pixel index in the reference frame
-        let rx1;
+        let rx1: number;
 
         // The first vertical pixel index in the reference frame
-        let ry1;
+        let ry1: number;
 
         // The second horizontal pixel index in the reference frame
-        let rx2;
+        let rx2: number;
 
         // The second vertical pixel index in the reference frame
-        let ry2;
+        let ry2: number;
 
         // The vertical component of first the moved pixel
         const my1 = by + mvy;
@@ -1958,13 +1959,13 @@ export class Frame {
      */
     invertDCT1D(y: number[]): number[] {
         // An 8-element array of output values
-        const x = [];
+        const x: number[] = [];
 
         // An 8-element array containing the current value of each signal line
-        const t = [];
+        const t: number[] = [];
 
         // A temporary value
-        let r;
+        let r: number;
 
         // 16-bit Approximations of Sines and Cosines
         const c3 = COSINES[2];
@@ -2143,10 +2144,10 @@ export class Frame {
         const res = [];
 
         // The column index
-        let ci;
+        let ci: number;
 
         // The row index
-        let ri;
+        let ri: number;
 
         // An 8-element array of 1D iDCT input values.
         let y: number[] = [];
@@ -2191,19 +2192,19 @@ export class Frame {
      */
     setPixels1(recp: number[][], pli: number, by: number, bx: number, pred: number[][], dc: number): void {
         // The vertical pixel index in the block
-        let biy;
+        let biy: number;
 
         // The horizontal pixel index in the block
-        let bix;
+        let bix: number;
 
         // The horizontal pixel index in the current plane
-        let px;
+        let px: number;
 
         // The vertical pixel index in the current plane
-        let py;
+        let py: number;
 
         // A reconstructed pixel value
-        let p;
+        let p: number;
 
         for (biy = 0; biy < 8; biy += 1) {
             // Y coordinate of the pixel
@@ -2249,11 +2250,11 @@ export class Frame {
      * @param {Array} res The decoded residual for the current block
      */
     setPixels2(recp: number[][], pli: number, by: number, bx: number, pred: number[][], res: number[][]): void {
-        let biy;
-        let bix;
-        let py;
-        let px;
-        let p;
+        let biy: number;
+        let bix: number;
+        let py: number;
+        let px: number;
+        let p: number;
 
         for (biy = 0; biy < 8; biy += 1) {
             // Y coordinate of the pixel
@@ -2394,21 +2395,21 @@ export class Frame {
         // If we have an inter frame
         // uncoded blocks will copied from
         // the previous frame
-        if (this.ftype !== 0) {
+        if (this.ftype !== 0 && this.prevrefy && this.prevrefcb && this.prevrefcr) {
             // 2-level deep array cope
-            len = this.prevrefy!.length;
+            len = this.prevrefy.length;
             for (i = 0; i < len; i += 1) {
-                this.recy[i] = this.prevrefy![i].slice(0);
+                this.recy[i] = this.prevrefy[i].slice(0);
             }
 
-            len = this.prevrefcb!.length;
+            len = this.prevrefcb.length;
             for (i = 0; i < len; i += 1) {
-                this.reccb[i] = this.prevrefcb![i].slice(0);
+                this.reccb[i] = this.prevrefcb[i].slice(0);
             }
 
-            len = this.prevrefcr!.length;
+            len = this.prevrefcr.length;
             for (i = 0; i < len; i += 1) {
-                this.reccr[i] = this.prevrefcr![i].slice(0);
+                this.reccr[i] = this.prevrefcr[i].slice(0);
             }
         }
 
@@ -2538,19 +2539,19 @@ export class Frame {
      */
     filterHorizontal(recp: number[][], fx: number, fy: number, l: number): void {
         // The edge detector response
-        let r;
+        let r: number;
 
         // A filtered pixel value
-        let p;
+        let p: number;
 
         // The vertical pixel index in the block
-        let by;
+        let by: number;
 
         // The modulated filter limit value
-        let lflim;
+        let lflim: number;
 
         // The vertical pixel index in the plane
-        let py;
+        let py: number;
 
         const fx1 = fx + 1;
         const fx2 = fx + 2;
@@ -2597,19 +2598,19 @@ export class Frame {
      */
     filterVertical(recp: number[][], fx: number, fy: number, l: number): void {
         // The edge detector response
-        let r;
+        let r: number;
 
         // A filtered pixel value
-        let p;
+        let p: number;
 
         // The horizontal pixel index in the block
-        let bx;
+        let bx: number;
 
         // The modulated filter limit value
-        let lflim;
+        let lflim: number;
 
         // The horizontal pixel index in the plane
-        let px;
+        let px: number;
 
         const fy1 = fy + 1;
         const fy2 = fy + 2;
@@ -2652,37 +2653,37 @@ export class Frame {
      */
     filterLoopComplete(): void {
         // The width of the current plane of in pixels
-        let rpw;
+        let rpw: number;
 
         // The height of the current plane of in pixels
-        let rph;
+        let rph: number;
 
         // Contents of the current plane
         let recp;
 
         // The horizontal pixel index of the lower-left corner of the current block
-        let bx;
+        let bx: number;
 
         // The vertical pixel index of the lower-left corner of the current block
-        let by;
+        let by: number;
 
         // The horizontal pixel index of the lower-left corner of the area to be filtered
-        let fx;
+        let fx: number;
 
         // The vertical pixel index of the lower-left corner of the area to be filtered
-        let fy;
+        let fy: number;
 
         // The color plane index of the current block
         let pli = 0;
 
         // The current block index in coded order
-        let bi;
+        let bi: number;
 
         // The index of a neighboring block in coded order
-        let bj;
+        let bj: number;
 
         // The current block index in raster order
-        let bri;
+        let bri: number;
 
         // The loop filter limit value
         const l = this.header.lflims[this.qis[0]];

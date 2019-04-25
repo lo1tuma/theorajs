@@ -43,9 +43,6 @@
     },
     "xo": {
         "space": 4,
-        "envs": [
-            "node"
-        ],
         "prettier": true,
         "nodeVersion": "11",
         "extends": "xo-typescript",
@@ -74,7 +71,21 @@
             ],
             "ava/no-ignored-test-files": "off",
             "no-negated-condition": "off"
-        }
+        },
+        "overrides": [
+            {
+                "files": "test/**/*",
+                "envs": [ "node" ]
+            },
+            {
+                "files": "src/browser/dom/**/*",
+                "envs": [ "browser" ]
+            },
+            {
+                "files": "src/browser/worker/**/*",
+                "envs": [ "worker" ]
+            }
+        ]
     },
     "ava": {
         "snapshotDir": "test/integration/snapshots"

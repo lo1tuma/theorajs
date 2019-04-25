@@ -1,9 +1,9 @@
 import { Decoder } from '../../lib/theora/decoder';
 import { TransportStream } from '../../lib/ogg/transportStream';
-import { AjaxStream } from '../../lib/stream/ajaxStream';
 import { isTheora } from '../../lib/theora/header';
 import { RGBRenderer } from '../../lib/player/rgbRenderer';
 import { Packet } from '../../lib/ogg/packet';
+import { AjaxStream } from './ajaxStream';
 
 let running = false;
 let renderer: RGBRenderer;

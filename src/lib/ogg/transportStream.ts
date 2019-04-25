@@ -29,7 +29,7 @@ export class TransportStream {
      * @return {Array} Array of all LogicalStream instances.
      */
     findLogicalStreams(): LogicalStream[] {
-        let page;
+        let page: Page;
 
         // Lookup for all logical streams
         // a logical stream is identified by a ogg page where the BeginOfStream flag is true

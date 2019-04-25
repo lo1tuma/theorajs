@@ -13,10 +13,10 @@ export function computeSuperBlockSizes(width: number, height: number): number[] 
     const sizes = [];
 
     // Current super block row
-    let row;
+    let row: number;
 
     // Current super block column
-    let col;
+    let col: number;
 
     // Width in super blocks
     let superBlocksWidth = (width - (width % 4)) / 4;
@@ -144,10 +144,10 @@ export function computeRasterToCodedOrderMappingTable(
     const table = [];
 
     // Index of the current block in coded order
-    let bi;
+    let bi: number;
 
     // Index of the current super block
-    let sbi;
+    let sbi: number;
 
     // Total number of blocks
     const numberOfBlocks = width * height;
@@ -159,10 +159,10 @@ export function computeRasterToCodedOrderMappingTable(
     let col = 0;
 
     // Absolute position of the row of the current block
-    let blockRow;
+    let blockRow: number;
 
     // Absolute position of the col of the current block
-    let blockCol;
+    let blockCol: number;
 
     // Width of the current super block
     let superBlockWidth = 4;
@@ -291,11 +291,11 @@ export function computeMacroBlockMappingTables(
     let pli = 0;
 
     // The relative position of the macro block in its current row
-    let xOffset;
+    let xOffset: number;
 
     // Iterators to loop through the dimensions of a macro block
-    let i;
-    let j;
+    let i: number;
+    let j: number;
 
     // Macro blocks will be accessed in coded order within a super block.
     // A super block contains 2*2 macro blocks. The lower-left has the index 0,
