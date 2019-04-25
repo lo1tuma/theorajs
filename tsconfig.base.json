@@ -5,6 +5,7 @@
         "declaration": true,
         "outDir": "./build/",
         "incremental": true,
+        "sourceMap": true,
         "strict": true,
         "noImplicitAny": true,
         "strictNullChecks": true,

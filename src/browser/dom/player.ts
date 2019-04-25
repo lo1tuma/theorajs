@@ -55,7 +55,7 @@ interface DecoderData {
  * @module TheoraPlayer
  * @class TheoraPlayer
  */
-export class TheoraPlayer {
+export class Player {
     private cnt: number;
 
     private canvas: HTMLCanvasElement;
