@@ -69,7 +69,7 @@ export class Frame {
      * @proerty coeffs
      * @type {Array}
      */
-    private coeffs: number[][];
+    private coeffs: Int8Array[];
 
     /**
      * An NBS-element array of the coefficient count for each block
@@ -1399,10 +1399,7 @@ export class Frame {
         for (bi = 0; bi < this.header.nbs; bi += 1) {
             tis[bi] = 0;
             this.ncoeffs[bi] = 0;
-            this.coeffs[bi] = [];
-            for (i = 0; i < 64; i += 1) {
-                this.coeffs[bi][i] = 0;
-            }
+            this.coeffs[bi] = new Int8Array(64);
         }
 
         eobs = 0;
