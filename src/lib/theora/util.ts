@@ -11,7 +11,7 @@ import { TheoraError } from './errors';
  * @return {Array} r, g, b
  */
 export const yCbCrToRGB = (function() {
-    const rgbCache: [number, number, number][][][] = [];
+    const rgbCache: Uint8Array[][][] = [];
     const yOutCache: number[] = [];
     const pCache: number[] = [];
 
@@ -25,20 +25,16 @@ export const yCbCrToRGB = (function() {
         }
     }
 
-    return function(y: number, cb: number, cr: number): [number, number, number] {
-        const yOut = yOutCache[y];
-        const pb = pCache[cb];
-        const pr = pCache[cr];
-        let r;
-        let g;
-        let b;
-
+    return function(y: number, cb: number, cr: number): Uint8Array {
         // If we have no entry in the cache
         // we have to compute the r,g,b values
         if (!rgbCache[y][cb][cr]) {
-            r = yOut + 1.402 * pr;
-            g = yOut - 0.344136286 * pb - 0.714136286 * pr;
-            b = yOut + 1.772 * pb;
+            const yOut = yOutCache[y];
+            const pb = pCache[cb];
+            const pr = pCache[cr];
+            let r = yOut + 1.402 * pr;
+            let g = yOut - 0.344136286 * pb - 0.714136286 * pr;
+            let b = yOut + 1.772 * pb;
 
             // Clamp
             if (r >= 1) {
@@ -63,7 +59,12 @@ export const yCbCrToRGB = (function() {
             g = ~~(g * 255);
             b = ~~(b * 255);
 
-            rgbCache[y][cb][cr] = [r, g, b];
+            const pixel = new Uint8Array(3);
+            pixel[0] = r;
+            pixel[1] = g;
+            pixel[2] = b;
+
+            rgbCache[y][cb][cr] = pixel;
         }
 
         return rgbCache[y][cb][cr];

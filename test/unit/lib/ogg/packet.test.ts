@@ -142,7 +142,7 @@ test('next32() returns the 32-bit value of the four bytes after calling next8() 
 test('next32() works correctly when its data originated from different segments', (t) => {
     const packet = new Packet();
     const firstSegment = new Uint8Array([1, 1]);
-    const secondSegment = new Uint8Array([0, 0]);
+    const secondSegment = new Uint8Array([0, 0, 0]);
 
     packet.addSegment(firstSegment);
     packet.addSegment(secondSegment);
