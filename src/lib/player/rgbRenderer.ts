@@ -52,9 +52,9 @@ export class RGBRenderer {
                 const subPlaneRow = (row / this.verticalPlaneDivisor) | 0;
                 const subPlaneColumn = (column / this.horizontalPlaneDivisor) | 0;
                 const pixel = yCbCrToRGB(
-                    frame.recy[row][column],
-                    frame.reccb[subPlaneRow][subPlaneColumn],
-                    frame.reccr[subPlaneRow][subPlaneColumn]
+                    frame.recy[row * frame.rpyw + column],
+                    frame.reccb[subPlaneRow * frame.rpcw + subPlaneColumn],
+                    frame.reccr[subPlaneRow * frame.rpcw + subPlaneColumn]
                 );
 
                 const bufferIndex = (this.decoder.width * targetY + targetX) * this.bytesPerPixel;

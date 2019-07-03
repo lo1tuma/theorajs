@@ -21,12 +21,45 @@ import { Header } from './header';
 import { TheoraError } from './errors';
 import { MappingTables } from './decoder';
 
+// TODO
+interface Plane {
+    width: number;
+    height: number;
+    values: Uint8Array;
+}
+
 export class Frame {
-    public recy: number[][];
+    /**
+     * RPYH*RPYW Array of pixel values of the Y plane.
+     *
+     * @property recy
+     * @type {Array}
+     */
+    public recy: Uint8Array;
 
-    public reccb: number[][];
+    /**
+     * RPCH*RPCW Array of pixel values of the Cb plane.
+     *
+     * @property reccb
+     * @type {Array}
+     */
+    public reccb: Uint8Array;
 
-    public reccr: number[][];
+    /**
+     * RPCH*RPCW Array of pixel values of the Cr plane.
+     *
+     * @property reccr
+     * @type {Array}
+     */
+    public reccr: Uint8Array;
+
+    public rpch: number;
+
+    public rpcw: number;
+
+    public rpyh: number;
+
+    public rpyw: number;
 
     public changedPixels: number[][];
 
@@ -38,19 +71,19 @@ export class Frame {
 
     private reader: Bitstream;
 
-    private goldrefy?: number[][];
+    private goldrefy?: Uint8Array;
 
-    private goldrefcb?: number[][];
+    private goldrefcb?: Uint8Array;
 
-    private goldrefcr?: number[][];
+    private goldrefcr?: Uint8Array;
 
-    private prevrefy?: number[][];
+    private prevrefy?: Uint8Array;
 
-    private prevrefcb?: number[][];
+    private prevrefcb?: Uint8Array;
 
-    private prevrefcr?: number[][];
+    private prevrefcr?: Uint8Array;
 
-    private referenceFrames: [null, [number[][]?, number[][]?, number[][]?], [number[][]?, number[][]?, number[][]?]];
+    private referenceFrames: [null, [Uint8Array?, Uint8Array?, Uint8Array?], [Uint8Array?, Uint8Array?, Uint8Array?]];
 
     private tables: MappingTables;
 
@@ -88,14 +121,6 @@ export class Frame {
      */
     private bcoded: number[];
 
-    private rpch: number;
-
-    private rpcw: number;
-
-    private rpyh: number;
-
-    private rpyw: number;
-
     private qis: number[];
 
     private qiis: number[];
@@ -127,10 +152,6 @@ export class Frame {
         goldReferenceFrame?: Frame,
         prevReferenceFrame?: Frame
     ) {
-        this.recy = [];
-        this.reccb = [];
-        this.reccr = [];
-
         this.tables = tables;
         this.colorPlaneOffsets = colorPlaneOffsets;
 
@@ -142,10 +163,6 @@ export class Frame {
         this.coeffs = [];
         this.ncoeffs = [];
         this.bcoded = [];
-        this.rpch = 0;
-        this.rpcw = 0;
-        this.rpyh = 0;
-        this.rpyw = 0;
         this.qis = [];
         this.qiis = [];
         this.mbmodes = [];
@@ -168,6 +185,27 @@ export class Frame {
             this.prevrefcb = prevReferenceFrame.reccb;
             this.prevrefcr = prevReferenceFrame.reccr;
         }
+
+        // Set Y plane dimensions
+        this.rpyw = 16 * this.header.fmbw;
+        this.rpyh = 16 * this.header.fmbh;
+
+        // Set dimensions of the chroma planes
+        // corresponding to the pixel format
+        if (this.header.pf === 0) {
+            this.rpcw = 8 * this.header.fmbw;
+            this.rpch = 8 * this.header.fmbh;
+        } else if (this.header.pf === 2) {
+            this.rpcw = 8 * this.header.fmbw;
+            this.rpch = 16 * this.header.fmbh;
+        } else {
+            this.rpcw = 16 * this.header.fmbw;
+            this.rpch = 16 * this.header.fmbh;
+        }
+
+        this.recy = new Uint8Array(this.rpyw * this.rpyh);
+        this.reccb = new Uint8Array(this.rpcw * this.rpch);
+        this.reccr = new Uint8Array(this.rpcw * this.rpch);
 
         /**
          * Direct access to a plane of the reference frame, depending on rfi and pli.
@@ -230,23 +268,6 @@ export class Frame {
             for (bi = 0; bi < this.header.nbs; bi += 1) {
                 this.bcoded[bi] = 0;
             }
-        }
-
-        // Set Y plane dimensions
-        this.rpyw = 16 * this.header.fmbw;
-        this.rpyh = 16 * this.header.fmbh;
-
-        // Set dimensions of the chroma planes
-        // corresponding to the pixel format
-        if (this.header.pf === 0) {
-            this.rpcw = 8 * this.header.fmbw;
-            this.rpch = 8 * this.header.fmbh;
-        } else if (this.header.pf === 2) {
-            this.rpcw = 8 * this.header.fmbw;
-            this.rpch = 16 * this.header.fmbh;
-        } else if (this.header.pf === 3) {
-            this.rpcw = 16 * this.header.fmbw;
-            this.rpch = 16 * this.header.fmbh;
         }
 
         // Reconstruct the complte frame
@@ -1694,7 +1715,7 @@ export class Frame {
     getWholePixelPredictor(
         rpw: number,
         rph: number,
-        refp: number[][],
+        refp: Uint8Array,
         bx: number,
         by: number,
         mvx: number,
@@ -1736,9 +1757,9 @@ export class Frame {
             if (rx < 0) {
                 for (bix = 0; bix < 8; bix += 1) {
                     if (rx < 0) {
-                        pred[biy][bix] = refp[ry][0];
+                        pred[biy][bix] = refp[ry * rpw];
                     } else {
-                        pred[biy][bix] = refp[ry][rx];
+                        pred[biy][bix] = refp[ry * rpw + rx];
                     }
 
                     rx += 1;
@@ -1746,22 +1767,22 @@ export class Frame {
             } else if (rx + 7 > rpw - 1) {
                 for (bix = 0; bix < 8; bix += 1) {
                     if (rx > rpw - 1) {
-                        pred[biy][bix] = refp[ry][rpw - 1];
+                        pred[biy][bix] = refp[ry * rpw + (rpw - 1)];
                     } else {
-                        pred[biy][bix] = refp[ry][rx];
+                        pred[biy][bix] = refp[ry * rpw + rx];
                     }
 
                     rx += 1;
                 }
             } else {
-                pred[biy][0] = refp[ry][rx];
-                pred[biy][1] = refp[ry][rx + 1];
-                pred[biy][2] = refp[ry][rx + 2];
-                pred[biy][3] = refp[ry][rx + 3];
-                pred[biy][4] = refp[ry][rx + 4];
-                pred[biy][5] = refp[ry][rx + 5];
-                pred[biy][6] = refp[ry][rx + 6];
-                pred[biy][7] = refp[ry][rx + 7];
+                pred[biy][0] = refp[ry * rpw + rx];
+                pred[biy][1] = refp[ry * rpw + rx + 1];
+                pred[biy][2] = refp[ry * rpw + rx + 2];
+                pred[biy][3] = refp[ry * rpw + rx + 3];
+                pred[biy][4] = refp[ry * rpw + rx + 4];
+                pred[biy][5] = refp[ry * rpw + rx + 5];
+                pred[biy][6] = refp[ry * rpw + rx + 6];
+                pred[biy][7] = refp[ry * rpw + rx + 7];
             }
         }
 
@@ -1787,7 +1808,7 @@ export class Frame {
     getHalfPixelPredictor(
         rpw: number,
         rph: number,
-        refp: number[][],
+        refp: Uint8Array,
         bx: number,
         by: number,
         mvx: number,
@@ -1863,7 +1884,7 @@ export class Frame {
                     rx2 = 0;
                 }
 
-                pred[biy][bix] = (refp[ry1][rx1] + refp[ry2][rx2]) >> 1;
+                pred[biy][bix] = (refp[ry1 * rpw + rx1] + refp[ry2 * rpw + rx2]) >> 1;
             }
         }
 
@@ -2181,13 +2202,22 @@ export class Frame {
      * @method setPixels1
      * @private
      * @param {Array} recp Pointer to the current plane to reconstruct
+     * @param {Number} recw the width of the current plane
      * @param {Number} pli The color plane index of the current block
      * @param {Number} by Vertical pixel index of the lower-left corner of the current block
      * @param {Number} bx Horizontal pixel index of the lower-left corner of the current block
      * @param {Array} pred Predictor values to use for the current block
      * @param {Number} dc The dequantized DC coefficient of a block
      */
-    setPixels1(recp: number[][], pli: number, by: number, bx: number, pred: number[][], dc: number): void {
+    setPixels1(
+        recp: Uint8Array,
+        recw: number,
+        pli: number,
+        by: number,
+        bx: number,
+        pred: number[][],
+        dc: number
+    ): void {
         // The vertical pixel index in the block
         let biy: number;
 
@@ -2207,11 +2237,6 @@ export class Frame {
             // Y coordinate of the pixel
             py = by + biy;
 
-            // Init, if not exists
-            if (!recp[py]) {
-                recp[py] = [];
-            }
-
             for (bix = 0; bix < 8; bix += 1) {
                 // X coordinate of the pixel
                 px = bx + bix;
@@ -2229,7 +2254,7 @@ export class Frame {
                     this.changedPixels.push([px, py]);
                 }
 
-                recp[py][px] = p;
+                recp[py * recw + px] = p;
             }
         }
     }
@@ -2240,13 +2265,22 @@ export class Frame {
      * @method setPixels2
      * @private
      * @param {Array} recp Pointer to the current plane to reconstruct
+     * @param {Number} recw the width of the current plane
      * @param {Number} pli The color plane index of the current block
      * @param {Number} by Vertical pixel index of the lower-left corner of the current block
      * @param {Number} bx Horizontal pixel index of the lower-left corner of the current block
      * @param {Array} pred Predictor values to use for the current block
      * @param {Array} res The decoded residual for the current block
      */
-    setPixels2(recp: number[][], pli: number, by: number, bx: number, pred: number[][], res: number[][]): void {
+    setPixels2(
+        recp: Uint8Array,
+        recw: number,
+        pli: number,
+        by: number,
+        bx: number,
+        pred: number[][],
+        res: number[][]
+    ): void {
         let biy: number;
         let bix: number;
         let py: number;
@@ -2256,11 +2290,6 @@ export class Frame {
         for (biy = 0; biy < 8; biy += 1) {
             // Y coordinate of the pixel
             py = by + biy;
-
-            // Init, if not exists
-            if (!recp[py]) {
-                recp[py] = [];
-            }
 
             for (bix = 0; bix < 8; bix += 1) {
                 // X coordinate of the pixel
@@ -2279,7 +2308,7 @@ export class Frame {
                     this.changedPixels.push([px, py]);
                 }
 
-                recp[py][px] = p;
+                recp[py * recw + px] = p;
             }
         }
     }
@@ -2357,57 +2386,18 @@ export class Frame {
         // A array of dequantized DCT coefficients in natural order
         let dqc;
 
-        // Cached length for loops
-        let len;
-
         let i;
 
         let divX = 2;
         let divY = 2;
 
-        /**
-         * RPYH*RPYW Array of pixel values of the Y plane.
-         *
-         * @property recy
-         * @type {Array}
-         */
-        this.recy = [];
-
-        /**
-         * RPCH*RPCW Array of pixel values of the Cb plane.
-         *
-         * @property reccb
-         * @type {Array}
-         */
-        this.reccb = [];
-
-        /**
-         * RPCH*RPCW Array of pixel values of the Cr plane.
-         *
-         * @property reccr
-         * @type {Array}
-         */
-        this.reccr = [];
-
         // If we have an inter frame
         // uncoded blocks will copied from
         // the previous frame
         if (this.ftype !== 0 && this.prevrefy && this.prevrefcb && this.prevrefcr) {
-            // 2-level deep array cope
-            len = this.prevrefy.length;
-            for (i = 0; i < len; i += 1) {
-                this.recy[i] = this.prevrefy[i].slice(0);
-            }
-
-            len = this.prevrefcb.length;
-            for (i = 0; i < len; i += 1) {
-                this.reccb[i] = this.prevrefcb[i].slice(0);
-            }
-
-            len = this.prevrefcr.length;
-            for (i = 0; i < len; i += 1) {
-                this.reccr[i] = this.prevrefcr[i].slice(0);
-            }
+            this.recy = new Uint8Array(this.prevrefy);
+            this.reccb = new Uint8Array(this.prevrefcb);
+            this.reccr = new Uint8Array(this.prevrefcr);
         }
 
         recp = this.recy;
@@ -2419,7 +2409,7 @@ export class Frame {
         rph = this.rpyh;
 
         // For all coded blocks
-        len = this.codedBlocks.length;
+        const len = this.codedBlocks.length;
         for (i = 0; i < len; i += 1) {
             bi = this.codedBlocks[i];
             bri = this.tables.codedToRasterOrder[bi];
@@ -2452,7 +2442,7 @@ export class Frame {
                 pred = INTRA_PREDICTOR;
             } else {
                 // Get the current plane of the reference frame
-                const refFrame = this.referenceFrames[rfi] as [number[][], number[][], number[][]];
+                const refFrame = this.referenceFrames[rfi] as [Uint8Array, Uint8Array, Uint8Array];
                 refp = refFrame[pli];
 
                 if (pli > 0) {
@@ -2488,12 +2478,12 @@ export class Frame {
                     dc = -32768;
                 }
 
-                this.setPixels1(recp, pli, by, bx, pred, dc);
+                this.setPixels1(recp, rpw, pli, by, bx, pred, dc);
             } else {
                 qi = this.qis[this.qiis[bi]];
                 dqc = this.dequantize(qti, pli, qi0, qi, bi);
                 res = this.invertDCT2D(dqc);
-                this.setPixels2(recp, pli, by, bx, pred, res);
+                this.setPixels2(recp, rpw, pli, by, bx, pred, res);
             }
         }
     }
@@ -2534,7 +2524,7 @@ export class Frame {
      * @param {Number} fy The vertical pixel index of the lower-left corner of the area to be filtered
      * @param {Number} l The loop filter limit value
      */
-    filterHorizontal(recp: number[][], fx: number, fy: number, l: number): void {
+    filterHorizontal(recp: Uint8Array, recw: number, fx: number, fy: number, l: number): void {
         // The edge detector response
         let r: number;
 
@@ -2557,11 +2547,16 @@ export class Frame {
         for (by = 0; by < 8; by += 1) {
             py = fy + by;
 
-            r = (recp[py][fx] - 3 * recp[py][fx1] + 3 * recp[py][fx2] - recp[py][fx3] + 4) >> 3;
+            const index = py * recw + fx;
+            const index1 = py * recw + fx1;
+            const index2 = py * recw + fx2;
+            const index3 = py * recw + fx3;
+
+            r = (recp[index] - 3 * recp[index1] + 3 * recp[index2] - recp[index3] + 4) >> 3;
 
             lflim = this.getLflim(r, l);
 
-            p = recp[py][fx1] + lflim;
+            p = recp[index1] + lflim;
             // Clamp
             if (p > 255) {
                 p = 255;
@@ -2569,9 +2564,9 @@ export class Frame {
                 p = 0;
             }
 
-            recp[py][fx1] = p;
+            recp[index1] = p;
 
-            p = recp[py][fx2] - lflim;
+            p = recp[index2] - lflim;
             // Clamp
             if (p > 255) {
                 p = 255;
@@ -2579,7 +2574,7 @@ export class Frame {
                 p = 0;
             }
 
-            recp[py][fx2] = p;
+            recp[index2] = p;
         }
     }
 
@@ -2593,7 +2588,7 @@ export class Frame {
      * @param {Number} fy The vertical pixel index of the lower-left corner of the area to be filtered
      * @param {Number} l The loop filter limit value
      */
-    filterVertical(recp: number[][], fx: number, fy: number, l: number): void {
+    filterVertical(recp: Uint8Array, recw: number, fx: number, fy: number, l: number): void {
         // The edge detector response
         let r: number;
 
@@ -2616,11 +2611,16 @@ export class Frame {
         for (bx = 0; bx < 8; bx += 1) {
             px = fx + bx;
 
-            r = (recp[fy][px] - 3 * recp[fy1][px] + 3 * recp[fy2][px] - recp[fy3][px] + 4) >> 3;
+            const index = fy * recw + px;
+            const index1 = fy1 * recw + px;
+            const index2 = fy2 * recw + px;
+            const index3 = fy3 * recw + px;
+
+            r = (recp[index] - 3 * recp[index1] + 3 * recp[index2] - recp[index3] + 4) >> 3;
 
             lflim = this.getLflim(r, l);
 
-            p = recp[fy1][px] + lflim;
+            p = recp[index1] + lflim;
             // Clamp
             if (p > 255) {
                 p = 255;
@@ -2628,9 +2628,9 @@ export class Frame {
                 p = 0;
             }
 
-            recp[fy1][px] = p;
+            recp[index1] = p;
 
-            p = recp[fy2][px] - lflim;
+            p = recp[index2] - lflim;
             // Clamp
             if (p > 255) {
                 p = 255;
@@ -2638,7 +2638,7 @@ export class Frame {
                 p = 0;
             }
 
-            recp[fy2][px] = p;
+            recp[index2] = p;
         }
     }
 
@@ -2717,13 +2717,13 @@ export class Frame {
                 if (bx > 0) {
                     fx = bx - 2;
                     fy = by;
-                    this.filterHorizontal(recp, fx, fy, l);
+                    this.filterHorizontal(recp, rpw, fx, fy, l);
                 }
 
                 if (by > 0) {
                     fx = bx;
                     fy = by - 2;
-                    this.filterVertical(recp, fx, fy, l);
+                    this.filterVertical(recp, rpw, fx, fy, l);
                 }
 
                 if (bx + 8 < rpw) {
@@ -2731,7 +2731,7 @@ export class Frame {
                     if (this.bcoded[bj] === 0) {
                         fx = bx + 6;
                         fy = by;
-                        this.filterHorizontal(recp, fx, fy, l);
+                        this.filterHorizontal(recp, rpw, fx, fy, l);
                     }
                 }
 
@@ -2740,7 +2740,7 @@ export class Frame {
                     if (this.bcoded[bj] === 0) {
                         fx = bx;
                         fy = by + 6;
-                        this.filterVertical(recp, fx, fy, l);
+                        this.filterVertical(recp, rpw, fx, fy, l);
                     }
                 }
             }

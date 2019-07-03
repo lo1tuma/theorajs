@@ -59,6 +59,7 @@ test('matches the reference pictures exactly', async (t) => {
 
         if (numberOfMismatchedPixels > 0) {
             const diffPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_diff.png`, diff);
+            const actualPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_actual.png`, actualPng);
             t.log(`Mismatched frame number ${frameIndex}. Diff file has been saved at ${diffPath}.`);
         }
 
