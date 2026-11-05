@@ -2497,11 +2497,11 @@ export class Frame {
         }
 
         const pl2 = l * 2;
-        if (r <= pl2 || pl2 <= r) {
+        if (r <= -pl2 || pl2 <= r) {
             return 0;
         }
 
-        if (r <= l) {
+        if (r <= -l) {
             return -r - pl2;
         }
 
