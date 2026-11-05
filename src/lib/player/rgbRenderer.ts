@@ -74,7 +74,12 @@ export class RGBRenderer {
     }
 
     private isOutsideOfPictureRegion(x: number, y: number): boolean {
-        return x <= this.decoder.xOffset || y <= this.decoder.yOffset;
+        return (
+            x < this.decoder.xOffset ||
+            y < this.decoder.yOffset ||
+            x >= this.decoder.xOffset + this.decoder.width ||
+            y >= this.decoder.yOffset + this.decoder.height
+        );
     }
 
     private determineTargetCoordinate(x: number, y: number): [number, number] {
