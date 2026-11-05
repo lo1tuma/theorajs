@@ -21,6 +21,12 @@ import { Header } from './header';
 import { TheoraError } from './errors';
 import { MappingTables } from './decoder';
 
+function roundMotionVector(value: number): number {
+    const magnitude = Math.round(Math.abs(value));
+
+    return magnitude === 0 ? 0 : magnitude * sign(value);
+}
+
 // TODO
 interface Plane {
     width: number;
@@ -797,11 +803,11 @@ export class Frame {
 
                         mVector = [];
                         // X component
-                        mVector[0] = Math.round(
+                        mVector[0] = roundMotionVector(
                             (this.mvects[a][0] + this.mvects[b][0] + this.mvects[c][0] + this.mvects[d][0]) / 4
                         );
                         // Y component
-                        mVector[1] = Math.round(
+                        mVector[1] = roundMotionVector(
                             (this.mvects[a][1] + this.mvects[b][1] + this.mvects[c][1] + this.mvects[d][1]) / 4
                         );
 
@@ -816,18 +822,18 @@ export class Frame {
 
                         mVector = [];
                         // X component
-                        mVector[0] = Math.round((this.mvects[a][0] + this.mvects[b][0]) / 2);
+                        mVector[0] = roundMotionVector((this.mvects[a][0] + this.mvects[b][0]) / 2);
                         // Y component
-                        mVector[1] = Math.round((this.mvects[a][1] + this.mvects[b][1]) / 2);
+                        mVector[1] = roundMotionVector((this.mvects[a][1] + this.mvects[b][1]) / 2);
 
                         this.mvects[e] = mVector;
                         this.mvects[g] = mVector;
 
                         mVector = [];
                         // X component
-                        mVector[0] = Math.round((this.mvects[c][0] + this.mvects[d][0]) / 2);
+                        mVector[0] = roundMotionVector((this.mvects[c][0] + this.mvects[d][0]) / 2);
                         // Y component
-                        mVector[1] = Math.round((this.mvects[c][1] + this.mvects[d][1]) / 2);
+                        mVector[1] = roundMotionVector((this.mvects[c][1] + this.mvects[d][1]) / 2);
 
                         this.mvects[f] = mVector;
                         this.mvects[h] = mVector;
