@@ -1,3 +1,8 @@
+export interface Integer64 {
+    lowBits: number;
+    highBits: number;
+}
+
 export class ByteStream {
     private index: number;
 
@@ -97,12 +102,13 @@ export class ByteStream {
      * @param {Boolean} [littleEndian=false] Defines the byte-order
      * @return {Object}
      */
-    next64(littleEndian?: boolean): number {
-        const val = this.data.getFloat64(this.index, littleEndian);
+    next64(littleEndian: boolean = false): Integer64 {
+        const lowBits = this.data.getUint32(this.index + (littleEndian ? 0 : 4), littleEndian);
+        const highBits = this.data.getInt32(this.index + (littleEndian ? 4 : 0), littleEndian);
 
         this.index += 8;
 
-        return val;
+        return { lowBits, highBits };
     }
 
     /**

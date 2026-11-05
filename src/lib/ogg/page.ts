@@ -1,4 +1,4 @@
-import { ByteStream } from '../stream/byteStream';
+import { ByteStream, Integer64 } from '../stream/byteStream';
 import { OggError } from './errors';
 
 export class Page {
@@ -8,7 +8,7 @@ export class Page {
 
     public headerType: number;
 
-    public granulePosition: number;
+    public granulePosition: Integer64;
 
     public serialNumber: number;
 
