@@ -42,10 +42,11 @@ test('decodes all frames without errors', async (t) => {
     t.is(frameCount, 813);
 });
 
-test('matches the reference pictures exactly', async (t) => {
+test('matches historical references under the pixelmatch policy', async (t) => {
     const byteStream = await readOggFile(mediumComplexOggFile);
 
     t.plan(813);
+    let savedDiffs = 0;
 
     await forAllRGBAFrames(byteStream, async (frame: Uint8Array, decoder: Decoder, frameIndex: number) => {
         const actualPng = frameToPng(frame, decoder);
@@ -57,10 +58,11 @@ test('matches the reference pictures exactly', async (t) => {
             threshold: 0.0
         });
 
-        if (numberOfMismatchedPixels > 0) {
+        if (numberOfMismatchedPixels > 0 && savedDiffs < 3) {
+            savedDiffs += 1;
             const diffPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_diff.png`, diff);
             const actualPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_actual.png`, actualPng);
-            t.log(`Mismatched frame number ${frameIndex}. Diff file has been saved at ${diffPath}.`);
+            t.log(`Mismatched frame number ${frameIndex}. Diff: ${diffPath}. Actual: ${actualPath}.`);
         }
 
         t.is(numberOfMismatchedPixels, 0);
