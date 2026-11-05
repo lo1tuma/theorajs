@@ -1,5 +1,6 @@
+import { Packet } from '../../../../src/lib/ogg/packet';
 import test, { ExecutionContext } from 'ava';
-import { yCbCrToRGB } from '../../../../src/lib/theora/util';
+import { yCbCrToRGB, Bitstream } from '../../../../src/lib/theora/util';
 
 function convertMacro(
     t: ExecutionContext,
@@ -22,3 +23,20 @@ test('converts yellow', convertMacro, [255, 1, 149], [255, 255, 22]);
 test('converts brown', convertMacro, [79, 107, 190], [172, 31, 30]);
 test('converts cyan', convertMacro, [179, 171, 1], [0, 255, 255]);
 test('converts violet', convertMacro, [57, 174, 186], [140, 0, 140]);
+
+test('reads a short bitstream without reading beyond its packet', (t) => {
+    const packet = new Packet();
+    packet.addSegment(new Uint8Array([165]));
+    const stream = new Bitstream(packet, 0);
+
+    t.is(stream.nextBits(4), 10);
+    t.is(stream.nextBits(4), 5);
+    t.throws(() => stream.nextBits(1), { message: 'Bitstream: End of Stream' });
+});
+
+test('an empty bitstream permits zero bits and rejects a nonzero read', (t) => {
+    const stream = new Bitstream(new Packet(), 0);
+
+    t.is(stream.nextBits(0), 0);
+    t.throws(() => stream.nextBits(1), { message: 'Bitstream: End of Stream' });
+});

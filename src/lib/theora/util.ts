@@ -182,10 +182,19 @@ export class Bitstream {
         this.bits = 0;
 
         // 16-bit lookup buffer
-        this.lookup = packet.next16();
+        const remainingBytes = packet.getLength() - offset;
+        this.lookup = 0;
+        if (remainingBytes >= 2) {
+            this.lookup = packet.next16();
+        } else if (remainingBytes === 1) {
+            this.lookup = packet.next8() << 8;
+            this.bits = 8;
+        } else {
+            this.bits = 16;
+        }
 
         // End of stream flag
-        this.eos = false;
+        this.eos = remainingBytes < 2;
     }
 
     /**

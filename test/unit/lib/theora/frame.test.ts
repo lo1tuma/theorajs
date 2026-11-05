@@ -1,4 +1,5 @@
 import path from 'path';
+import { Packet } from '../../../../src/lib/ogg/packet';
 import test from 'ava';
 import { readOggFile } from '../../../lib/files';
 import { TransportStream } from '../../../../src/lib/ogg/transportStream';
@@ -47,4 +48,23 @@ test('decodes coefficients above the signed 8-bit range without wrapping', async
     }
 
     t.is(count, 1);
+});
+
+test('an empty frame packet repeats the previous frame', async (t) => {
+    const stream = await readOggFile(path.resolve(__dirname, '../../../fixtures/coefficient-range.ogv'));
+    const [logicalStream] = new TransportStream(stream).findLogicalStreams();
+    const decoder = new Decoder(logicalStream);
+    const first = decoder.nextFrame();
+    logicalStream.nextPacket = () => new Packet();
+    const repeated = decoder.nextFrame();
+
+    if (!first || !repeated) {
+        t.fail('Missing decoded frame');
+        return;
+    }
+
+    t.deepEqual(repeated.recy, first.recy);
+    t.deepEqual(repeated.reccb, first.reccb);
+    t.deepEqual(repeated.reccr, first.reccr);
+    t.deepEqual(repeated.changedPixels, []);
 });
