@@ -1,5 +1,5 @@
-import { Packet } from '../../../../src/lib/ogg/packet';
 import test, { ExecutionContext } from 'ava';
+import { Packet } from '../../../../src/lib/ogg/packet';
 import { yCbCrToRGB, Bitstream } from '../../../../src/lib/theora/util';
 
 function convertMacro(

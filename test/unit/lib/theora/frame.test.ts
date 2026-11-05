@@ -1,6 +1,6 @@
 import path from 'path';
-import { Packet } from '../../../../src/lib/ogg/packet';
 import test from 'ava';
+import { Packet } from '../../../../src/lib/ogg/packet';
 import { readOggFile } from '../../../lib/files';
 import { TransportStream } from '../../../../src/lib/ogg/transportStream';
 import { Decoder } from '../../../../src/lib/theora/decoder';
