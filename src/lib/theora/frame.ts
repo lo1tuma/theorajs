@@ -102,7 +102,7 @@ export class Frame {
      * @proerty coeffs
      * @type {Array}
      */
-    private coeffs: Int8Array[];
+    private coeffs: Int16Array[];
 
     /**
      * An NBS-element array of the coefficient count for each block
@@ -1420,7 +1420,7 @@ export class Frame {
         for (bi = 0; bi < this.header.nbs; bi += 1) {
             tis[bi] = 0;
             this.ncoeffs[bi] = 0;
-            this.coeffs[bi] = new Int8Array(64);
+            this.coeffs[bi] = new Int16Array(64);
         }
 
         eobs = 0;
@@ -1680,13 +1680,7 @@ export class Frame {
                 bi = this.tables.rasterToCodedOrder[bri + this.colorPlaneOffsets[pli]];
                 if (this.bcoded[bi] !== 0) {
                     dcpred = this.computeDCPredictor(bi, lastdc);
-                    dc = this.coeffs[bi][0] + dcpred;
-                    // Truncate dc to a signed 16-bit representation
-                    if (dc >= 32768) {
-                        dc = 32768;
-                    } else if (dc <= -32768) {
-                        dc = -32768;
-                    }
+                    dc = ((this.coeffs[bi][0] + dcpred) << 16) >> 16;
 
                     this.coeffs[bi][0] = dc;
                     mbi = this.tables.biToMbi[bi];
