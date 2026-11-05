@@ -59,11 +59,7 @@ export const yCbCrToRGB = (function() {
             g = ~~(g * 255);
             b = ~~(b * 255);
 
-            const pixel = new Uint8Array(3);
-            pixel[0] = r;
-            pixel[1] = g;
-            pixel[2] = b;
-
+            const pixel = new Uint8Array([r, g, b]);
             rgbCache[y][cb][cr] = pixel;
         }
 
