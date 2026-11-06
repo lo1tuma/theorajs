@@ -32,6 +32,22 @@ Serve them over HTTP with the video fixture and a container whose id is `test`:
 Their thresholds are host-dependent and are separate from correctness checks.
 `npm test` runs lint, unit tests, and integration tests.
 
+Development artifacts are checked separately:
+
+```sh
+npm run test:artifacts
+npm run install:browser
+npm run test:browser
+```
+
+Artifact checks consume emitted ESM and declarations outside the source tree.
+Browser checks use pinned Playwright Chromium and exercise the player and worker
+bundles. Chromium coverage does not establish Chrome, Firefox or Safari coverage.
+Playwright is temporary until Overkill proves browser execution, provisioning,
+timeouts, cleanup and failure reporting. The known playback queue-drain
+limitation remains outside this smoke check. These internal artifact paths do
+not define the eventual public package API.
+
 The compiler enforces strict checks. ESLint uses the shared Enormora presets
 with zero warnings. Required bitwise expressions are isolated in the integer
 arithmetic module, with an exception on each expression only.

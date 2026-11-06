@@ -37,6 +37,7 @@
         "exactOptionalPropertyTypes": true,
         "forceConsistentCasingInFileNames": true,
         "rewriteRelativeImportExtensions": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "inlineSources": true
     }
 }

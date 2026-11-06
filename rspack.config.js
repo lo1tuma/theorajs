@@ -10,6 +10,19 @@ export default [
             target,
             entry,
             mode: 'production',
+            devtool: 'source-map',
+            module: {
+                rules: [ {
+                    test: /\.js$/u,
+                    include: path.resolve(
+                        import
+                            .meta
+                            .dirname,
+                        'build/src'
+                    ),
+                    extractSourceMap: true
+                } ]
+            },
             output: {
                 path: path.resolve(import.meta.dirname, 'build/assets'),
                 filename: `${name}.js`

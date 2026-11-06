@@ -26,6 +26,7 @@
         "ava": "8.3.0",
         "eslint": "10.14.0",
         "pixelmatch": "4.0.2",
+        "playwright": "1.65.0",
         "pngjs": "3.4.0",
         "typescript": "6.0.3"
     },
@@ -33,10 +34,15 @@
         "build": "npm run compile && rspack build",
         "compile": "tsc --build",
         "copy:fixtures": "node --input-type=module -e \"import { cp } from 'node:fs/promises'; await cp('test/fixtures', 'build/test/fixtures', { recursive: true });\"",
+        "install:browser": "playwright install chromium",
         "lint": "eslint src 'test/**/*.ts' eslint.config.js rspack.config.js package.json tsconfig.json tsconfig.base.json README.md --max-warnings 0",
         "test": "npm run lint && npm run test:unit && npm run test:integration",
+        "pretest:artifacts": "npm run build && npm run copy:fixtures",
+        "test:artifacts": "ava 'build/test/artifacts/**/*.test.js' --timeout=2m",
         "pretest:bench": "npm run test-setup",
         "test:bench": "ava 'build/test/benchmarks/**/*.bench.js' --verbose --timeout=10m",
+        "pretest:browser": "npm run build",
+        "test:browser": "ava 'build/test/browser/**/*.test.js' --timeout=2m",
         "pretest:integration": "npm run test-setup",
         "test:integration": "ava 'build/test/integration/**/*.test.js' --timeout=10m",
         "pretest:unit": "npm run test-setup",
@@ -48,7 +54,9 @@
         "files": [
             "build/test/unit/**/*.test.js",
             "build/test/integration/**/*.test.js",
-            "build/test/benchmarks/**/*.bench.js"
+            "build/test/benchmarks/**/*.bench.js",
+            "build/test/artifacts/**/*.test.js",
+            "build/test/browser/**/*.test.js"
         ]
     },
     "devEngines": {
