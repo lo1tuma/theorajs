@@ -1,14 +1,16 @@
-import path from 'path';
-import os from 'os';
-import { performance } from 'perf_hooks';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'ava';
-import { readOggFile, decodeAndConvertAllFrames } from '../lib/files';
+import { decodeAndConvertAllFrames, readOggFile } from '../lib/video-fixtures.ts';
 
-const mediumComplexOggFile = path.resolve(__dirname, '../fixtures/trailer_400p.ogg');
-const cpuSpeed = os.cpus()[0].speed;
+const mediumComplexOggFile = path.resolve(import.meta.dirname, '../fixtures/trailer_400p.ogg');
+const cpuSpeed = os.cpus().at(0)?.speed ?? 0;
+if (cpuSpeed <= 0) {
+    throw new Error('CPU frequency is unavailable.');
+}
 
-test('decoding and converting to RGB many frames', async (t) => {
-    const budget = 120000000 / cpuSpeed;
+test('decoding and converting to RGB many frames', async function (t) {
+    const budget = 120_000_000 / cpuSpeed;
     const byteStream = await readOggFile(mediumComplexOggFile);
 
     const startTime = performance.now();

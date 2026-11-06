@@ -1,139 +1,81 @@
-export interface Integer64 {
-    lowBits: number;
-    highBits: number;
-}
+import { combineBits, shiftSignedLeft } from './integer-arithmetic.ts';
 
-export class ByteStream {
-    private index: number;
+const SHORT_BYTES = 2;
+const INTEGER_BYTES = 4;
+const GRANULE_BYTES = 8;
+const BYTE_BITS = 8;
+const SHORT_BITS = 16;
 
-    private length: number;
+export type Integer64 = {
+    readonly lowBits: number;
+    readonly highBits: number;
+};
 
-    private data: DataView;
+export type ByteStream = {
+    readonly setData: (buffer: ArrayBuffer) => void;
+    readonly next8: () => number;
+    readonly next16: (littleEndian: boolean) => number;
+    readonly next24: (littleEndian: boolean) => number;
+    readonly next32: (littleEndian: boolean) => number;
+    readonly next64: (littleEndian: boolean) => Integer64;
+    readonly nextArray: (length: number) => Uint8Array<ArrayBuffer>;
+    readonly skip: (length: number) => void;
+};
 
-    private byteView: Uint8Array;
+export function createByteStream(): ByteStream {
+    let position = 0;
+    let data = new DataView(new ArrayBuffer(0));
+    let bytes = new Uint8Array(0);
 
-    /**
-     * ByteStream
-     *
-     * @class ByteStream
-     * @namespace Stream
-     * @param {String} data Binary data string
-     * @constructor
-     */
-    constructor() {
-        this.index = 0;
-        this.length = 0;
-        this.data = new DataView(new ArrayBuffer(0));
-        this.byteView = new Uint8Array(0);
+    function next8(): number {
+        const value = data.getUint8(position);
+        position += 1;
+        return value;
     }
 
-    setData(buffer: ArrayBuffer): void {
-        this.data = new DataView(buffer);
-        this.byteView = new Uint8Array(buffer);
-        this.length = this.data.byteLength;
-    }
-
-    /**
-     * Get the next 8-bit value.
-     *
-     * @method next8
-     * @return {Number}
-     */
-    next8(): number {
-        const val = this.data.getUint8(this.index);
-
-        this.index += 1;
-        return val;
-    }
-
-    /**
-     * Get the next 16-bit value.
-     *
-     * @method next16
-     * @param {Boolean} [littleEndian=false] Defines the byte-order
-     * @return {Number}
-     */
-    next16(littleEndian?: boolean): number {
-        const val = this.data.getUint16(this.index, littleEndian);
-
-        this.index += 2;
-        return val;
-    }
-
-    /**
-     * Get the next 24-bit value.
-     *
-     * @method next24
-     * @param {Boolean} [littleEndian=false] Defines the byte-order
-     * @return {Number}
-     */
-    next24(littleEndian?: boolean): number {
-        const b1 = this.next8();
-        const b2 = this.next8();
-        const b3 = this.next8();
-
-        if (littleEndian) {
-            return (b3 << 16) | (b2 << 8) | b1;
+    return {
+        setData(buffer: ArrayBuffer): void {
+            data = new DataView(buffer);
+            bytes = new Uint8Array(buffer);
+        },
+        next8,
+        next16(littleEndian: boolean): number {
+            const value = data.getUint16(position, littleEndian);
+            position += SHORT_BYTES;
+            return value;
+        },
+        next24(littleEndian: boolean): number {
+            const first = next8();
+            const second = next8();
+            const third = next8();
+            return littleEndian
+                ? combineBits(
+                    combineBits(shiftSignedLeft(third, SHORT_BITS), shiftSignedLeft(second, BYTE_BITS)),
+                    first
+                )
+                : combineBits(
+                    combineBits(shiftSignedLeft(first, SHORT_BITS), shiftSignedLeft(second, BYTE_BITS)),
+                    third
+                );
+        },
+        next32(littleEndian: boolean): number {
+            const value = data.getUint32(position, littleEndian);
+            position += INTEGER_BYTES;
+            return value;
+        },
+        next64(littleEndian: boolean): Integer64 {
+            const lowBits = data.getUint32(position + (littleEndian ? 0 : INTEGER_BYTES), littleEndian);
+            const highBits = data.getInt32(position + (littleEndian ? INTEGER_BYTES : 0), littleEndian);
+            position += GRANULE_BYTES;
+            return { lowBits, highBits };
+        },
+        nextArray(length: number): Uint8Array<ArrayBuffer> {
+            const result = bytes.subarray(position, position + length);
+            position += length;
+            return result;
+        },
+        skip(length: number): void {
+            position += length;
         }
-
-        return (b1 << 16) | (b2 << 8) | b3;
-    }
-
-    /**
-     * Get the next 32-bit value.
-     *
-     * @method next32
-     * @param {Boolean} [littleEndian=false] Defines the byte-order
-     * @return {Number}
-     */
-    next32(littleEndian?: boolean): number {
-        const val = this.data.getUint32(this.index, littleEndian);
-
-        this.index += 4;
-        return val;
-    }
-
-    /**
-     * Get the next 64-bit value.
-     * Javascript can't handle 64bit integers and all bit operations are performed with 32-bit arithmetic.
-     * Therefore this method will return an object with 2 values, lowBits and highBits.
-     *
-     * @method next64
-     * @param {Boolean} [littleEndian=false] Defines the byte-order
-     * @return {Object}
-     */
-    next64(littleEndian: boolean = false): Integer64 {
-        const lowBits = this.data.getUint32(this.index + (littleEndian ? 0 : 4), littleEndian);
-        const highBits = this.data.getInt32(this.index + (littleEndian ? 4 : 0), littleEndian);
-
-        this.index += 8;
-
-        return { lowBits, highBits };
-    }
-
-    /**
-     * Generates a byte array of a specified number of values.
-     * If there are not enough values left, the maximum of available values will be returned.
-     *
-     * @method nextArray
-     * @param {Number} n Numer of values
-     * @return {Array}
-     */
-    nextArray(n: number): Uint8Array {
-        const bytes = this.byteView.subarray(this.index, this.index + n);
-
-        this.index += n;
-
-        return bytes;
-    }
-
-    /**
-     * Skip a specified number of 8-bit values.
-     *
-     * @method skip
-     * @param {Number} n Number of values.
-     */
-    skip(n: number): void {
-        this.index += n;
-    }
+    };
 }

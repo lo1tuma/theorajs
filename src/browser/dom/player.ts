@@ -1,186 +1,112 @@
-/**
- * Set the default dimension of the canvas
- *
- * @method initCanvas
- * @private
- * @param {Object} canvas
- * @return {Object} context
- */
-function initCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
-    const ctx = canvas.getContext('2d');
+import Queue from 'yocto-queue';
+import { match } from 'ts-pattern';
+import { type DecoderCommand, type DecoderMetadata, type WorkerReply, readWorkerReply } from '../messages/messages.ts';
 
-    if (!ctx) {
-        throw new Error('Couldn’t initial canvas');
+const INITIAL_WIDTH = 400;
+const INITIAL_HEIGHT = 240;
+const MILLISECONDS_PER_SECOND = 1000;
+
+export type PlayerOptions = {
+    readonly url: string;
+    readonly elementId: string;
+    readonly workerPath: string;
+    readonly onStart: () => void;
+    readonly onStop: (frames: number, framerate: number) => void;
+    readonly onError: (message: string) => void;
+};
+type PlaybackOptions = Pick<PlayerOptions, 'onError' | 'onStart' | 'onStop'> & {
+    readonly canvas: HTMLCanvasElement;
+    readonly context: CanvasRenderingContext2D;
+    readonly worker: Worker;
+};
+type Playback = { readonly receive: (reply: WorkerReply) => void; };
+
+type CanvasSurface = { readonly canvas: HTMLCanvasElement; readonly context: CanvasRenderingContext2D; };
+
+function initializeCanvas(): CanvasSurface {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (context === null) {
+        throw new Error('Could not initialize canvas');
     }
-
-    canvas.width = 400;
-    canvas.height = 240;
-
-    drawDefaultBackground(ctx, 400, 240);
-
-    return ctx;
-}
-
-function drawDefaultBackground(context: CanvasRenderingContext2D, width: number, height: number): void {
+    canvas.width = INITIAL_WIDTH;
+    canvas.height = INITIAL_HEIGHT;
     context.fillStyle = '#000000';
-    context.fillRect(0, 0, width, height);
+    context.fillRect(0, 0, INITIAL_WIDTH, INITIAL_HEIGHT);
+    return { canvas, context };
 }
 
-function removeFromDom(elemId: string, child: HTMLElement): void {
-    const element = document.querySelector(`#${elemId}`);
-
-    if (element) {
-        element.removeChild(child);
+function createPlayback(options: PlaybackOptions): Playback {
+    const queue = new Queue<ImageData>();
+    const { canvas, context, worker } = options;
+    let metadata: DecoderMetadata | null = null;
+    let timer: number | null = null;
+    let decodedFrames = 0;
+    function draw(): void {
+        const frame = queue.dequeue();
+        if (frame !== undefined) {
+            context.putImageData(frame, 0, 0);
+        }
     }
-}
-
-function addToDom(elemId: string, child: HTMLElement): void {
-    const element = document.querySelector(`#${elemId}`);
-
-    if (element) {
-        element.append(child);
+    function start(data: DecoderMetadata): void {
+        metadata = data;
+        canvas.width = data.width;
+        canvas.height = data.height;
+        const command: DecoderCommand = { type: 'command', command: 'decode' };
+        worker.postMessage(command);
+        options.onStart();
+        timer = setInterval(draw, MILLISECONDS_PER_SECOND / data.framerate);
     }
-}
-
-interface DecoderData {
-    width: number;
-    height: number;
-    framerate: number;
-}
-
-/**
- * Simple Theora video player, which makes use auf a Theora decoder in a dedicated Web Worker.
- *
- * @main TheoraPlayer
- * @module TheoraPlayer
- * @class TheoraPlayer
- */
-export class Player {
-    private cnt: number;
-
-    private canvas: HTMLCanvasElement;
-
-    private context: CanvasRenderingContext2D;
-
-    private onStartCallback: () => void;
-
-    private onStopCallback: (cnt: number, framerate: number) => void;
-
-    private elemId: string;
-
-    private worker: Worker;
-
-    private frames: ImageData[];
-
-    private info: DecoderData;
-
-    private imageSize: number;
-
-    private interval: number;
-
-    /**
-     * Simple demo theora player, which works with a dedicated decoder worker.
-     *
-     * @class TheoraPlayer
-     * @constructor
-     * @param {String} url
-     * @param {String} Element id
-     * elemid
-     */
-    constructor(
-        url: string,
-        elemId: string,
-        workerPath: string,
-        onStart: () => void,
-        onStop: (cnt: number, framerate: number) => void
-    ) {
-        this.cnt = 0;
-        this.canvas = document.createElement('canvas');
-        this.context = initCanvas(this.canvas);
-        this.onStartCallback = onStart;
-        this.onStopCallback = onStop;
-        this.elemId = elemId;
-
-        addToDom(elemId, this.canvas);
-
-        this.worker = new Worker(workerPath);
-        this.worker.addEventListener('message', this.listen);
-
-        this.worker.postMessage({ type: 'command', command: 'init', url });
-
-        this.frames = [];
-
-        this.info = {
-            width: 0,
-            height: 0,
-            framerate: 0
-        };
-
-        this.imageSize = 0;
-
-        this.interval = 0;
+    function finishPlayback(): void {
+        if (timer !== null) {
+            clearInterval(timer);
+        }
+        if (metadata !== null) {
+            options.onStop(decodedFrames, metadata.framerate);
+        }
+        decodedFrames = 0;
+        timer = null;
     }
-
-    addFrame(frame: ArrayBuffer): void {
-        const imgData = new ImageData(new Uint8ClampedArray(frame), this.info.width, this.info.height);
-        this.frames.push(imgData);
+    function receiveFrame(frame: ArrayBuffer): void {
+        if (metadata === null) {
+            options.onError('Received a frame before decoder metadata.');
+            return;
+        }
+        decodedFrames += 1;
+        queue.enqueue(new ImageData(new Uint8ClampedArray(frame), metadata.width, metadata.height));
     }
-
-    adjustCanvas(): void {
-        this.canvas.width = this.info.width;
-        this.canvas.height = this.info.height;
-    }
-
-    start(data: DecoderData): void {
-        this.info = data;
-        this.adjustCanvas();
-        this.worker.postMessage({ type: 'command', command: 'decode' });
-        this.imageSize = data.width * data.height * 4;
-        this.onStartCallback();
-        this.interval = window.setInterval(this.draw, 1000 / data.framerate);
-    }
-
-    clear(): void {
-        removeFromDom(this.elemId, this.canvas);
-    }
-
-    stop(): void {
-        window.clearInterval(this.interval);
-        this.onStopCallback(this.cnt, this.info.framerate);
-    }
-
-    private draw = (): void => {
-        const frame = this.frames.shift();
-
-        if (frame) {
-            this.context.putImageData(frame, 0, 0);
+    return {
+        receive(reply: WorkerReply): void {
+            match(reply)
+                .with({ type: 'error' }, function ({ message }) {
+                    options.onError(message);
+                })
+                .with({ type: 'success' }, function ({ data }) {
+                    start(data);
+                })
+                .with({ type: 'eos' }, function () {
+                    worker.terminate();
+                    finishPlayback();
+                })
+                .with({ type: 'data' }, function ({ frame }) {
+                    receiveFrame(frame);
+                })
+                .exhaustive();
         }
     };
+}
 
-    private listen = (event: MessageEvent): void => {
-        const msg = event.data;
-
-        if (msg.type === 'error') {
-            console.log('error');
-            return;
+export function startPlayer(options: PlayerOptions): void {
+    const { canvas, context } = initializeCanvas();
+    document.querySelector(`#${CSS.escape(options.elementId)}`)?.append(canvas);
+    const worker = new Worker(options.workerPath);
+    const playback = createPlayback({ ...options, canvas, context, worker });
+    worker.addEventListener('message', function (messageEvent: MessageEvent<unknown>): void {
+        const reply = readWorkerReply(messageEvent.data);
+        if (reply !== null) {
+            playback.receive(reply);
         }
-
-        if (msg.type === 'success') {
-            this.start(msg.data);
-            return;
-        }
-
-        if (msg.type === 'eos') {
-            this.worker.terminate();
-            this.stop();
-            this.cnt = 0;
-            return;
-        }
-
-        if (msg.type === 'data') {
-            console.log(`frame ${this.cnt + 1} decoded`);
-            this.cnt += 1;
-            this.addFrame(msg.frame);
-        }
-    };
+    });
+    const command: DecoderCommand = { type: 'command', command: 'init', url: options.url };
+    worker.postMessage(command);
 }

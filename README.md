@@ -1,19 +1,48 @@
-theorajs
-========
+# theorajs
 
 Theora Decoder in JavaScript
 
 Demo: http://lo1tuma.github.com/theorajs/
 
-Granule positions
------------------
+## Development
+
+Install Node.js 26.13.0 with its bundled npm 11.20.0, plus Git LFS.
+Development commands reject other Node or npm versions.
+
+```sh
+git lfs install
+git lfs pull
+git lfs fsck
+npm ci
+npm run build
+npm run lint
+npm run test:unit
+npm run test:integration
+```
+
+TypeScript compiles the source before Rspack bundles the emitted JavaScript.
+The browser bundles are `build/assets/player.js` and `build/assets/worker.js`.
+Serve them over HTTP with the video fixture and a container whose id is `test`:
+
+```html
+<script src="/player.js" data-video-url="/video.ogg" data-worker-url="/worker.js"></script>
+```
+
+`npm run test:bench` runs the historical CPU-frequency-based benchmarks.
+Their thresholds are host-dependent and are separate from correctness checks.
+`npm test` runs lint, unit tests, and integration tests.
+
+The compiler enforces strict checks. ESLint uses the shared Enormora presets
+with zero warnings. Required bitwise expressions are isolated in the integer
+arithmetic module, with an exception on each expression only.
+
+## Granule positions
 
 `Page.granulePosition` contains `lowBits` (unsigned 32-bit) and `highBits`
 (signed 32-bit). This preserves all 64 bits without floating-point rounding.
 The unknown position has `lowBits = 4294967295` and `highBits = -1`.
 
-Coefficient regression fixture
-------------------------------
+## Coefficient regression fixture
 
 `test/fixtures/coefficient-range.ogv` is a generated 32 by 32 white frame,
 encoded with FFmpeg 8.1.3 and libtheora 1.2.0. It contains a DC coefficient
@@ -35,8 +64,7 @@ each chroma plane. Reference generation runs separately from test assertions.
 Fixture SHA-256:
 `943470416bb7e1d0f9d3cd2cfca6b76e092fcd54bf35ffdb1581dfda9c681892`.
 
-Independent decoding reference
-------------------------------
+## Independent decoding reference
 
 `test/fixtures/prediction.ogv` contains four 32 by 32 test-pattern frames
 in 4:2:0 format, covering key and inter prediction. It was generated with
@@ -59,8 +87,7 @@ SHA-256 identities:
 - Input: `cb8219d1ad5e1d152b11c6ea8a5a26bad4a5edb289af03854621260ecf6a2630`
 - Reference: `e446dafecca9f28b94d175f477ed7d97b86343052d52459db378abb4ed690f2a`
 
-Trailer image references
-------------------------
+## Trailer image references
 
 The 813 PNGs in `test/reference-pictures/trailer_400p` are generated from
 independent raw planes, separately from test execution. The original image
@@ -106,7 +133,7 @@ g = y - 0.344136286 * pb - 0.714136286 * pr
 b = y + 1.772 * pb
 ```
 
-Clamp each channel to [0, 1], multiply by 255, and truncate downward.
+Clamp each channel to `[0, 1]`, multiply by 255, and truncate downward.
 Alpha is 255 for every pixel. PNGs store RGBA at 8 bits per channel with
 no color-profile transformation. The integration test compares dimensions
 and all RGBA bytes exactly; visual diffs are diagnostic only. Failures retain

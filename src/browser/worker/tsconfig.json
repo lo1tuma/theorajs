@@ -2,10 +2,21 @@
     "extends": "../../../tsconfig.base.json",
     "compilerOptions": {
         "rootDir": "../../..",
-        "lib": [ "es5", "ES2015", "ES2016", "ES2017", "ES2018",  "webworker", "scripthost" ]
+        "lib": [
+            "ES2025",
+            "WebWorker"
+        ],
+        "types": []
     },
     "references": [
-        { "path": "../../lib" }
+        {
+            "path": "../../lib"
+        },
+        {
+            "path": "../messages"
+        }
     ],
-    "include": [ "./**/*" ]
+    "include": [
+        "./**/*"
+    ]
 }

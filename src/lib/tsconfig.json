@@ -4,5 +4,8 @@
         "rootDir": "../.."
     },
     "references": [],
-    "include": [ "./**/*" ]
+    "include": [
+        "./**/*.ts",
+        "./**/*.json"
+    ]
 }

@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
-        "target": "es2019",
-        "module": "commonjs",
+        "target": "ES2025",
+        "module": "NodeNext",
         "declaration": true,
         "outDir": "./build/",
         "incremental": true,
@@ -14,12 +14,29 @@
         "strictPropertyInitialization": true,
         "noImplicitThis": true,
         "alwaysStrict": true,
-        "moduleResolution": "node",
+        "moduleResolution": "NodeNext",
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "composite": true,
         "types": [],
-        "typeRoots": [],
-        "lib": [ "es5", "ES2015", "ES2016", "ES2017", "ES2018" ]
+        "lib": [
+            "ES2025"
+        ],
+        "declarationMap": true,
+        "isolatedModules": true,
+        "verbatimModuleSyntax": true,
+        "noUncheckedSideEffectImports": true,
+        "strictBuiltinIteratorReturn": true,
+        "skipLibCheck": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitOverride": true,
+        "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true,
+        "forceConsistentCasingInFileNames": true,
+        "rewriteRelativeImportExtensions": true,
+        "resolveJsonModule": true
     }
 }

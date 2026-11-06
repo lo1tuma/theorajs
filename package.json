@@ -12,99 +12,62 @@
         "url": "https://github.com/lo1tuma/theorajs/issues"
     },
     "homepage": "https://github.com/lo1tuma/theorajs#readme",
-    "files": [
-        "LICENSE"
-    ],
     "devDependencies": {
-        "@types/node": "11.13.6",
+        "@enormora/eslint-config-ava": "0.0.71",
+        "@enormora/eslint-config-base": "0.0.75",
+        "@enormora/eslint-config-browser": "0.0.42",
+        "@enormora/eslint-config-node": "0.0.53",
+        "@enormora/eslint-config-typescript": "0.0.83",
+        "@rspack/cli": "2.3.1",
+        "@rspack/core": "2.3.1",
+        "@types/node": "26.6.6",
         "@types/pixelmatch": "4.0.0",
         "@types/pngjs": "3.3.2",
-        "@typescript-eslint/eslint-plugin": "1.6.0",
-        "@typescript-eslint/parser": "1.6.0",
-        "ava": "1.4.1",
-        "eslint": "6.0.0-alpha.0",
-        "eslint-config-xo-typescript": "0.9.0",
-        "eslint-import-resolver-node": "0.3.2",
+        "ava": "8.3.0",
+        "eslint": "10.14.0",
         "pixelmatch": "4.0.2",
         "pngjs": "3.4.0",
-        "ts-loader": "5.4.3",
-        "typescript": "3.4.4",
-        "webpack": "4.30.0",
-        "webpack-cli": "3.3.1",
-        "xo": "0.24.0"
+        "typescript": "6.0.3"
     },
     "scripts": {
-        "lint": "xo",
+        "build": "npm run compile && rspack build",
         "compile": "tsc --build",
-        "build": "pnpm run compile && webpack",
-        "copy:fixtures": "cp -R test/fixtures build/test/fixtures",
-        "test-setup": "pnpm run compile && pnpm run copy:fixtures",
-        "pretest:unit": "pnpm run test-setup",
-        "test:unit": "ava build/test/unit/**/*.test.js",
-        "pretest:integration": "pnpm run test-setup",
-        "test:integration": "ava build/test/integration/**/*.test.js",
-        "pretest:bench": "pnpm run test-setup",
-        "test:bench": "ava build/test/benchmarks/**/*.bench.js --verbose",
-        "test": "pnpm run lint && pnpm run test:unit && pnpm run test:integration && pnpm run test:bench"
-    },
-    "xo": {
-        "space": 4,
-        "prettier": true,
-        "nodeVersion": "11",
-        "extensions": [
-            "js",
-            "ts"
-        ],
-        "rules": {
-            "unicorn/filename-case": [
-                "error",
-                {
-                    "case": "camelCase"
-                }
-            ],
-            "object-curly-spacing": [
-                "error",
-                "always"
-            ],
-            "ava/no-ignored-test-files": "off",
-            "no-negated-condition": "off"
-        },
-        "overrides": [
-            {
-                "files": "**/*.ts",
-                "extends": "xo-typescript",
-                "rules": {
-                    "@typescript-eslint/indent": [
-                        "error",
-                        4,
-                        {
-                            "SwitchCase": 1
-                        }
-                    ],
-                    "@typescript-eslint/member-naming": "off"
-                }
-            },
-            {
-                "files": "test/**/*",
-                "envs": [
-                    "node"
-                ]
-            },
-            {
-                "files": "src/browser/dom/**/*",
-                "envs": [
-                    "browser"
-                ]
-            },
-            {
-                "files": "src/browser/worker/**/*",
-                "envs": [
-                    "worker"
-                ]
-            }
-        ]
+        "copy:fixtures": "node --input-type=module -e \"import { cp } from 'node:fs/promises'; await cp('test/fixtures', 'build/test/fixtures', { recursive: true });\"",
+        "lint": "eslint src 'test/**/*.ts' eslint.config.js rspack.config.js package.json tsconfig.json tsconfig.base.json README.md --max-warnings 0",
+        "test": "npm run lint && npm run test:unit && npm run test:integration",
+        "pretest:bench": "npm run test-setup",
+        "test:bench": "ava 'build/test/benchmarks/**/*.bench.js' --verbose --timeout=10m",
+        "pretest:integration": "npm run test-setup",
+        "test:integration": "ava 'build/test/integration/**/*.test.js' --timeout=10m",
+        "pretest:unit": "npm run test-setup",
+        "test:unit": "ava 'build/test/unit/**/*.test.js'",
+        "test-setup": "npm run compile && npm run copy:fixtures"
     },
     "ava": {
-        "snapshotDir": "test/integration/snapshots"
-    }
+        "snapshotDir": "test/integration/snapshots",
+        "files": [
+            "build/test/unit/**/*.test.js",
+            "build/test/integration/**/*.test.js",
+            "build/test/benchmarks/**/*.bench.js"
+        ]
+    },
+    "devEngines": {
+        "runtime": {
+            "name": "node",
+            "version": "26.13.0",
+            "onFail": "error"
+        },
+        "packageManager": {
+            "name": "npm",
+            "version": "11.20.0",
+            "onFail": "error"
+        }
+    },
+    "type": "module",
+    "dependencies": {
+        "@enormora/fire-and-forget": "0.0.4",
+        "ts-pattern": "5.9.2",
+        "yocto-queue": "1.2.2"
+    },
+    "private": true
 }

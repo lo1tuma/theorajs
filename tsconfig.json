@@ -6,9 +6,20 @@
     "files": [],
     "include": [],
     "references": [
-        { "path": "./src/browser/dom" },
-        { "path": "./src/browser/worker" },
-        { "path": "./src/lib" },
-        { "path": "./test" }
+        {
+            "path": "./src/browser/dom"
+        },
+        {
+            "path": "./src/browser/worker"
+        },
+        {
+            "path": "./src/lib"
+        },
+        {
+            "path": "./test"
+        },
+        {
+            "path": "./src/browser/messages"
+        }
     ]
 }

@@ -2,12 +2,26 @@
     "extends": "../tsconfig.base.json",
     "compilerOptions": {
         "rootDir": "../",
-        "lib": [ "es5", "ES2015", "ES2016", "ES2017", "ES2018", "dom" ]
+        "lib": [
+            "ES2025",
+            "ESNext.Array"
+        ],
+        "types": [
+            "node"
+        ]
     },
     "references": [
-        { "path": "../src/lib" },
-        { "path": "../src/browser/dom" },
-        { "path": "../src/browser/worker" }
+        {
+            "path": "../src/lib"
+        },
+        {
+            "path": "../src/browser/dom"
+        },
+        {
+            "path": "../src/browser/worker"
+        }
     ],
-    "include": [ "./**/*" ]
+    "include": [
+        "./**/*"
+    ]
 }
