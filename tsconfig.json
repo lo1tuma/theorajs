@@ -20,6 +20,9 @@
         },
         {
             "path": "./src/browser/messages"
+        },
+        {
+            "path": "./test/browser"
         }
     ]
 }
