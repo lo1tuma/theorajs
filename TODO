@@ -1,0 +1,4 @@
+- integreation tests: include all theora test suite videos
+- ci/cd
+- coverage
+- nix setup

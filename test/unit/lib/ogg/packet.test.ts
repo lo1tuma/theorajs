@@ -142,7 +142,7 @@ test('next32() returns the 32-bit value of the four bytes after calling next8() 
 test('next32() works correctly when its data originated from different segments', (t) => {
     const packet = new Packet();
     const firstSegment = new Uint8Array([1, 1]);
-    const secondSegment = new Uint8Array([0, 0]);
+    const secondSegment = new Uint8Array([0, 0, 0]);
 
     packet.addSegment(firstSegment);
     packet.addSegment(secondSegment);
@@ -181,4 +181,22 @@ test('seek() set the current cursor to the given position', (t) => {
     packet.seek(1);
 
     t.is(packet.next8(), 2);
+});
+
+test('reads unsigned words across appended segment boundaries', (t) => {
+    const packet = new Packet();
+    packet.addSegment(new Uint8Array([99, 255, 254]).subarray(1));
+    packet.addSegment(new Uint8Array([253, 252]));
+
+    t.is(packet.next32(), 4294901244);
+    t.throws(() => packet.next8(), { instanceOf: RangeError });
+});
+
+test('an exhausted read preserves the offset for a later appended segment', (t) => {
+    const packet = new Packet();
+    packet.addSegment(new Uint8Array([1]));
+    t.throws(() => packet.next16(), { instanceOf: RangeError });
+    packet.addSegment(new Uint8Array([2]));
+
+    t.is(packet.next16(), 258);
 });

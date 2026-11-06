@@ -12,7 +12,7 @@ import { RGBRenderer } from '../../src/lib/player/rgbRenderer';
 
 export async function readOggFile(file: string): Promise<ByteStream> {
     const buffer = await fs.readFile(file);
-    const arrayBuffer = buffer.buffer;
+    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
     const byteStream = new ByteStream();
 
     byteStream.setData(arrayBuffer);

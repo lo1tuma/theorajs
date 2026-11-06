@@ -89,7 +89,7 @@ test('reads a 64-bit value with big endian byte-order by default', (t) => {
 
     stream.setData(data);
 
-    t.is(stream.next64(), 2.6714197151382298e185);
+    t.deepEqual(stream.next64(), { lowBits: 1634890101, highBits: 1718579042 });
 });
 
 test('reads a 64-bit value with little endian byte-order', (t) => {
@@ -98,7 +98,7 @@ test('reads a 64-bit value with little endian byte-order', (t) => {
 
     stream.setData(data);
 
-    t.is(stream.next64(true), 5.239285324813416e257);
+    t.deepEqual(stream.next64(true), { lowBits: 1651470182, highBits: 1970369121 });
 });
 
 test('reads the given amount of bytes an returns them a byte array', (t) => {
@@ -119,4 +119,37 @@ test('skips the given amount of bytes', (t) => {
     stream.skip(6);
 
     t.deepEqual(stream.nextArray(3), new Uint8Array([113, 117, 120]));
+});
+
+for (const littleEndian of [false, true]) {
+    for (const [lowBits, highBits] of [
+        [0, 0],
+        [1, 0],
+        [4294967295, 0],
+        [0, 1],
+        [1, 2097152],
+        [4294967295, 2147483647],
+        [4294967295, -1]
+    ]) {
+        test(`preserves integer words ${lowBits},${highBits} with littleEndian=${littleEndian}`, (t) => {
+            const buffer = new ArrayBuffer(9);
+            const view = new DataView(buffer);
+            view.setUint32(littleEndian ? 0 : 4, lowBits, littleEndian);
+            view.setInt32(littleEndian ? 4 : 0, highBits, littleEndian);
+            view.setUint8(8, 42);
+            const stream = new ByteStream();
+            stream.setData(buffer);
+
+            t.deepEqual(stream.next64(littleEndian), { lowBits, highBits });
+            t.is(stream.next8(), 42);
+        });
+    }
+}
+
+test('a truncated integer read does not consume bytes', (t) => {
+    const stream = new ByteStream();
+    stream.setData(new Uint8Array([42, 0, 0, 0, 0, 0, 0]).buffer);
+
+    t.throws(() => stream.next64(true), { instanceOf: RangeError });
+    t.is(stream.next8(), 42);
 });

@@ -3,6 +3,8 @@ export class Packet {
 
     private offset: number;
 
+    private view: DataView;
+
     /**
      * Represents a logical ogg packet.
      *
@@ -12,6 +14,7 @@ export class Packet {
      */
     constructor() {
         this.data = new Uint8Array(0);
+        this.view = new DataView(this.data.buffer);
         this.offset = 0;
     }
 
@@ -33,6 +36,7 @@ export class Packet {
         result.set(segment, this.data.length);
 
         this.data = result;
+        this.view = new DataView(this.data.buffer);
     }
 
     /**
@@ -52,7 +56,7 @@ export class Packet {
      * @return {Number}
      */
     next8(): number {
-        const val = this.get8(this.offset);
+        const val = this.view.getUint8(this.offset);
         this.offset += 1;
         return val;
     }
@@ -64,7 +68,9 @@ export class Packet {
      * @return {Number}
      */
     next16(): number {
-        return (this.next8() << 8) | this.next8();
+        const val = this.view.getUint16(this.offset);
+        this.offset += 2;
+        return val;
     }
 
     /**
@@ -84,7 +90,9 @@ export class Packet {
      * @return {Number}
      */
     next32(): number {
-        return (this.next8() << 24) | this.next24();
+        const val = this.view.getUint32(this.offset);
+        this.offset += 4;
+        return val;
     }
 
     /**
@@ -95,7 +103,7 @@ export class Packet {
      * @return {Number}
      */
     get8(i: number): number {
-        return this.data[i];
+        return this.view.getUint8(i);
     }
 
     /**

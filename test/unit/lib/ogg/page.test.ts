@@ -88,7 +88,7 @@ test('returns false when the page is not the last page within a stream', (t) => 
 test('decodes and expose the granule position', (t) => {
     const page = createValidPage([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
 
-    t.is(page.granulePosition, 5.447603722011605e-270);
+    t.deepEqual(page.granulePosition, { lowBits: 67305985, highBits: 134678021 });
 });
 
 test('decodes and expose the serial number', (t) => {
@@ -170,4 +170,14 @@ test('decodes and expose the segments', (t) => {
     ]);
 
     t.deepEqual(page.segments, [new Uint8Array([1]), new Uint8Array([1, 1]), new Uint8Array([1, 1, 1])]);
+});
+
+test('preserves the unknown granule sentinel', (t) => {
+    const stream = new ByteStream();
+    const bytes = new Uint8Array(27);
+    bytes.set([79, 103, 103, 83]);
+    bytes.fill(255, 6, 14);
+    stream.setData(bytes.buffer);
+
+    t.deepEqual(new Page(stream).granulePosition, { lowBits: 4294967295, highBits: -1 });
 });

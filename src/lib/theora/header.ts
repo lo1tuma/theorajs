@@ -180,7 +180,7 @@ export class Header {
 
     public kfgshift: number;
 
-    public pf: number;
+    public pf: 0 | 2 | 3;
 
     public nmbs: number;
 
@@ -444,7 +444,7 @@ export class Header {
          *
          * @property pf
          */
-        this.pf = (data >> 3) & 0x03;
+        this.pf = ((data >> 3) & 0x03) as (0 | 2 | 3);
 
         // Reserved bits must be zero or we haven’t a valid stream
         if ((data & 0x07) !== 0) {
