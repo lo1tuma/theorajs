@@ -3,6 +3,7 @@ import test from 'ava';
 import { readOggFile } from '../../../lib/files';
 import { TransportStream } from '../../../../src/lib/ogg/transportStream';
 import { Decoder } from '../../../../src/lib/theora/decoder';
+import { Frame } from '../../../../src/lib/theora/frame';
 import { RGBRenderer } from '../../../../src/lib/player/rgbRenderer';
 
 for (const pixelFormat of [0, 2, 3]) {
@@ -54,3 +55,51 @@ for (const pixelFormat of [0, 2, 3]) {
         });
     }
 }
+
+async function pictureFrame(): Promise<{ decoder: Decoder; frame: Frame }> {
+    const stream = await readOggFile(path.resolve(__dirname, '../../../fixtures/320x240.ogg'));
+    const [logicalStream] = new TransportStream(stream).findLogicalStreams();
+    const decoder = new Decoder(logicalStream);
+    const frame = decoder.nextFrame();
+    if (!frame) {
+        throw new Error('Missing first frame');
+    }
+
+    Object.assign(decoder, { width: 2, height: 2, xOffset: 0, yOffset: 0 });
+    frame.recy.fill(235);
+    frame.reccb.fill(128);
+    frame.reccr.fill(128);
+    frame.changedPixels = [[0, 0], [1, 0], [0, 1], [1, 1]];
+    decoder.nextFrame = () => frame;
+    return { decoder, frame };
+}
+
+test('renders chroma changes without reconstructed luma pixels', async (t) => {
+    const { decoder, frame } = await pictureFrame();
+    frame.recy.fill(76);
+    const renderer = new RGBRenderer(decoder, { withAlphaChannel: true });
+    const gray = new Uint8Array([69, 69, 69, 255]);
+    const red = new Uint8Array([255, 0, 0, 255]);
+    const first = renderer.nextRGBFrame();
+    t.deepEqual(first, new Uint8Array([...gray, ...gray, ...gray, ...gray]));
+
+    frame.reccb.fill(85);
+    frame.reccr.fill(255);
+    frame.changedPixels = [];
+
+    t.deepEqual(renderer.nextRGBFrame(), new Uint8Array([...red, ...red, ...red, ...red]));
+    t.deepEqual(first, new Uint8Array([...gray, ...gray, ...gray, ...gray]));
+});
+
+test('renders filtered pixels outside the reconstruction list', async (t) => {
+    const { decoder, frame } = await pictureFrame();
+    const renderer = new RGBRenderer(decoder, { withAlphaChannel: true });
+    const white = new Uint8Array([255, 255, 255, 255]);
+    const black = new Uint8Array([0, 0, 0, 255]);
+    t.deepEqual(renderer.nextRGBFrame(), new Uint8Array([...white, ...white, ...white, ...white]));
+
+    frame.recy[frame.rpyw + 1] = 16;
+    frame.changedPixels = [[0, 0]];
+
+    t.deepEqual(renderer.nextRGBFrame(), new Uint8Array([...white, ...black, ...white, ...white]));
+});

@@ -44,11 +44,10 @@ export class RGBRenderer {
             return false;
         }
 
-        for (const changedPixel of frame.changedPixels) {
-            const [column, row] = changedPixel;
-
-            if (!this.isOutsideOfPictureRegion(column, row)) {
-                const [targetX, targetY] = this.determineTargetCoordinate(column, row);
+        for (let targetY = 0; targetY < this.decoder.height; targetY += 1) {
+            const row = this.decoder.yOffset + this.decoder.height - targetY - 1;
+            for (let targetX = 0; targetX < this.decoder.width; targetX += 1) {
+                const column = this.decoder.xOffset + targetX;
                 const subPlaneRow = (row / this.verticalPlaneDivisor) | 0;
                 const subPlaneColumn = (column / this.horizontalPlaneDivisor) | 0;
                 const pixel = yCbCrToRGB(
@@ -63,7 +62,6 @@ export class RGBRenderer {
                 this.currentBuffer[bufferIndex + 1] = pixel[1];
                 this.currentBuffer[bufferIndex + 2] = pixel[2];
 
-                // TODO since the alpha value is always the same and we share the buffer between frames we can do this once in the constructor instead of every time, maybe we can even initialize all buffer values with 255
                 if (this.options.withAlphaChannel) {
                     this.currentBuffer[bufferIndex + 3] = 255;
                 }
@@ -71,18 +69,5 @@ export class RGBRenderer {
         }
 
         return new Uint8Array(this.currentBuffer);
-    }
-
-    private isOutsideOfPictureRegion(x: number, y: number): boolean {
-        return (
-            x < this.decoder.xOffset ||
-            y < this.decoder.yOffset ||
-            x >= this.decoder.xOffset + this.decoder.width ||
-            y >= this.decoder.yOffset + this.decoder.height
-        );
-    }
-
-    private determineTargetCoordinate(x: number, y: number): [number, number] {
-        return [x - this.decoder.xOffset, this.decoder.height - (y - this.decoder.yOffset) - 1];
     }
 }
