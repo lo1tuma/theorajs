@@ -42,7 +42,7 @@ test('decodes all frames without errors', async (t) => {
     t.is(frameCount, 813);
 });
 
-test('matches historical references under the pixelmatch policy', async (t) => {
+test('matches independently generated RGBA references exactly', async (t) => {
     const byteStream = await readOggFile(mediumComplexOggFile);
 
     t.plan(813);
@@ -52,19 +52,21 @@ test('matches historical references under the pixelmatch policy', async (t) => {
         const actualPng = frameToPng(frame, decoder);
         const expectedPng = await readPng(`./test/reference-pictures/trailer_400p/frame_${frameIndex}.png`);
         const { width, height } = expectedPng;
-        const diff = new PNG({ width, height });
+        const sameDimensions = width === decoder.width && height === decoder.height;
+        const matches = sameDimensions && Buffer.from(frame).equals(expectedPng.data);
 
-        const numberOfMismatchedPixels = pixelmatch(expectedPng.data, actualPng.data, diff.data, width, height, {
-            threshold: 0.0
-        });
-
-        if (numberOfMismatchedPixels > 0 && savedDiffs < 3) {
+        if (!matches && sameDimensions && savedDiffs < 3) {
+            const diff = new PNG({ width, height });
+            pixelmatch(expectedPng.data, actualPng.data, diff.data, width, height, { threshold: 0, includeAA: true });
             savedDiffs += 1;
             const diffPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_diff.png`, diff);
+            const expectedPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_expected.png`, expectedPng);
             const actualPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_actual.png`, actualPng);
-            t.log(`Mismatched frame number ${frameIndex}. Diff: ${diffPath}. Actual: ${actualPath}.`);
+            t.log(
+                `Mismatched frame number ${frameIndex}. Expected: ${expectedPath}. Actual: ${actualPath}. Diff: ${diffPath}.`
+            );
         }
 
-        t.is(numberOfMismatchedPixels, 0);
+        t.true(matches, `Frame ${frameIndex}: expected ${width}x${height}, actual ${decoder.width}x${decoder.height}`);
     });
 });
