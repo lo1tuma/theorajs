@@ -1,39 +1,56 @@
-import { Player } from './player';
+import { startPlayer } from './player.ts';
 
-declare global {
-    interface Window {
-        initPlayer: (url: string, workerPath: string) => void;
+const MILLISECONDS_PER_SECOND = 1000;
+
+type PlaybackStatistics = { readonly elapsed: number; readonly frames: number; readonly framerate: number; };
+
+function showStatistics(statistics: PlaybackStatistics): void {
+    const element = document.querySelector('#info');
+    if (element === null) {
+        return;
     }
+    const lines = [
+        `Elapsed time: ${statistics.elapsed}s`,
+        `average framerate: ${statistics.frames / statistics.elapsed}`,
+        `video framerate: ${statistics.framerate}`,
+        `total frames: ${statistics.frames}`
+    ];
+    element.replaceChildren(...lines.flatMap(function (line, index) {
+        return index === 0
+            ? [ document.createTextNode(line) ]
+            : [ document.createElement('br'), document.createTextNode(line) ];
+    }));
 }
 
-window.initPlayer = function(url: string, workerPath: string): void {
-    let startTime = 0;
-    let stopTime = 0;
-
-    function startClb(): void {
-        const date = new Date();
-        startTime = date.getTime();
-    }
-
-    function stopClb(frameCnt: number, framerate: number): void {
-        const date = new Date();
-        stopTime = date.getTime();
-
-        const infoElement = document.querySelector('#info');
-
-        if (infoElement) {
-            const elapsedTime = (stopTime - startTime) / 1000;
-            const avgFramerate = frameCnt / elapsedTime;
-
-            infoElement.innerHTML = [
-                `Elapsed time: ${elapsedTime}s`,
-                `average framerate: ${avgFramerate}`,
-                `video framerate: ${framerate}`,
-                `total frames: ${frameCnt}`
-            ].join('<br>');
+function startDemo(url: string, workerPath: string): void {
+    let started = 0;
+    startPlayer({
+        url,
+        elementId: 'test',
+        workerPath,
+        onStart(): void {
+            started = Date.now();
+        },
+        onStop(frameCount: number, framerate: number): void {
+            showStatistics({
+                elapsed: (Date.now() - started) / MILLISECONDS_PER_SECOND,
+                frames: frameCount,
+                framerate
+            });
+        },
+        onError(message: string): void {
+            const element = document.querySelector('#info');
+            if (element !== null) {
+                element.textContent = message;
+            }
         }
-    }
+    });
+}
 
-    // eslint-disable-next-line no-new
-    new Player(url, 'test', workerPath, startClb, stopClb);
-};
+const script = document.currentScript;
+if (script instanceof HTMLScriptElement) {
+    const { videoUrl, workerUrl } = script.dataset;
+    if (videoUrl !== undefined && workerUrl !== undefined) {
+        startDemo(videoUrl, workerUrl);
+    }
+}

@@ -1,128 +1,74 @@
-export class Packet {
-    public data: Uint8Array;
+import { combineBits, shiftSignedLeft } from '../stream/integer-arithmetic.ts';
 
-    private offset: number;
+const SHORT_BYTES = 2;
+const INTEGER_BYTES = 4;
+const SHORT_BITS = 16;
 
-    private view: DataView;
+export type Packet = {
+    readonly data: Uint8Array<ArrayBuffer>;
+    readonly addSegment: (segment: Uint8Array) => void;
+    readonly getLength: () => number;
+    readonly next8: () => number;
+    readonly next16: () => number;
+    readonly next24: () => number;
+    readonly next32: () => number;
+    readonly get8: (position: number) => number;
+    readonly skip: (length: number) => void;
+    readonly seek: (position: number) => void;
+};
 
-    /**
-     * Represents a logical ogg packet.
-     *
-     * @class Packet
-     * @namespace Ogg
-     * @constructor
-     */
-    constructor() {
-        this.data = new Uint8Array(0);
-        this.view = new DataView(this.data.buffer);
-        this.offset = 0;
+export function createPacket(): Packet {
+    let data = new Uint8Array(0);
+    let view = new DataView(data.buffer);
+    let position = 0;
+
+    function next8(): number {
+        const value = view.getUint8(position);
+        position += 1;
+        return value;
     }
 
-    /**
-     * Adds a segment.
-     *
-     * @method addSegment
-     * @param {Array} segment Data array of the segment
-     */
-    addSegment(segment: Uint8Array): void {
-        if (segment.length === 0) {
-            // Don't add zero length segments
-            return;
+    function next16(): number {
+        const value = view.getUint16(position);
+        position += SHORT_BYTES;
+        return value;
+    }
+
+    return {
+        get data() {
+            return data;
+        },
+        addSegment(segment: Uint8Array): void {
+            if (segment.length === 0) {
+                return;
+            }
+            const result = new Uint8Array(data.length + segment.length);
+            result.set(data);
+            result.set(segment, data.length);
+            data = result;
+            view = new DataView(data.buffer);
+        },
+        getLength(): number {
+            return data.length;
+        },
+        next8,
+        next16,
+        next24(): number {
+            return combineBits(shiftSignedLeft(next8(), SHORT_BITS), next16());
+        },
+        next32(): number {
+            const value = view.getUint32(position);
+            position += INTEGER_BYTES;
+            return value;
+        },
+        get8(offset: number): number {
+            return view.getUint8(offset);
+        },
+        skip(length: number): void {
+            position += length;
+        },
+        seek(offset: number): void {
+            position = offset;
         }
-
-        const result = new Uint8Array(this.data.length + segment.length);
-
-        result.set(this.data, 0);
-        result.set(segment, this.data.length);
-
-        this.data = result;
-        this.view = new DataView(this.data.buffer);
-    }
-
-    /**
-     * Get the length of the packet
-     *
-     * @method getLength
-     * @return {Number}
-     */
-    getLength(): number {
-        return this.data.length;
-    }
-
-    /**
-     * Gets next 8-bit value.
-     *
-     * @method next8
-     * @return {Number}
-     */
-    next8(): number {
-        const val = this.view.getUint8(this.offset);
-        this.offset += 1;
-        return val;
-    }
-
-    /**
-     * Gets next 16-bit value.
-     *
-     * @method next16
-     * @return {Number}
-     */
-    next16(): number {
-        const val = this.view.getUint16(this.offset);
-        this.offset += 2;
-        return val;
-    }
-
-    /**
-     * Gets next 24-bit value.
-     *
-     * @method next24
-     * @return {Number}
-     */
-    next24(): number {
-        return (this.next8() << 16) | this.next16();
-    }
-
-    /**
-     * Gets next 32-bit value.
-     *
-     * @method next32
-     * @return {Number}
-     */
-    next32(): number {
-        const val = this.view.getUint32(this.offset);
-        this.offset += 4;
-        return val;
-    }
-
-    /**
-     * Get a 8-bit value of a specified offset.
-     *
-     * @method get8
-     * @param {Number} i offset
-     * @return {Number}
-     */
-    get8(i: number): number {
-        return this.view.getUint8(i);
-    }
-
-    /**
-     * Skips a specified number of bytes.
-     *
-     * @method skip
-     * @param {Number} n Bytes to skip.
-     */
-    skip(n: number): void {
-        this.offset += n;
-    }
-
-    /**
-     * Seeks to a specified position.
-     *
-     * @method seek
-     * @param {Number} pos Position
-     */
-    seek(pos: number): void {
-        this.offset = pos;
-    }
+    };
 }

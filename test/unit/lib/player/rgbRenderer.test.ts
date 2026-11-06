@@ -1,105 +1,150 @@
-import path from 'path';
-import test from 'ava';
-import { readOggFile } from '../../../lib/files';
-import { TransportStream } from '../../../../src/lib/ogg/transportStream';
-import { Decoder } from '../../../../src/lib/theora/decoder';
-import { Frame } from '../../../../src/lib/theora/frame';
-import { RGBRenderer } from '../../../../src/lib/player/rgbRenderer';
+import test, { type ExecutionContext } from 'ava';
 
-for (const pixelFormat of [0, 2, 3]) {
-    for (const withAlphaChannel of [false, true]) {
-        test(`renders cropped borders for format ${pixelFormat}, alpha=${withAlphaChannel}`, async (t) => {
-            const stream = await readOggFile(path.resolve(__dirname, '../../../fixtures/320x240.ogg'));
-            const [logicalStream] = new TransportStream(stream).findLogicalStreams();
-            const decoder = new Decoder(logicalStream);
-            const frame = decoder.nextFrame();
-            if (!frame) {
-                t.fail('Missing first frame');
-                return;
+import { createRGBRenderer, type PictureSource, type RGBRenderer } from '../../../../src/lib/player/rgbRenderer.ts';
+import type { PixelCoordinate } from '../../../../src/lib/theora/frame-planes.ts';
+import type { Frame } from '../../../../src/lib/theora/frame.ts';
+
+const PLANE_EDGE = 6;
+const HALF_EDGE = 3;
+const PICTURE_EDGE = 2;
+const GRAY_PICTURE = new Uint8Array([ 69, 69, 69, 255, 69, 69, 69, 255, 69, 69, 69, 255, 69, 69, 69, 255 ]);
+const RED_PICTURE = new Uint8Array([ 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255 ]);
+const WHITE_PICTURE = new Uint8Array([
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255,
+    255
+]);
+const FILTERED_PICTURE = new Uint8Array([ 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255 ]);
+
+type PictureFixture = {
+    readonly frame: Frame;
+    readonly source: PictureSource;
+    readonly setChanges: (changes: readonly PixelCoordinate[]) => void;
+    readonly finish: () => void;
+};
+
+function pictureFixture(pixelFormat: number, offset: number): PictureFixture {
+    const chromaWidth = pixelFormat === HALF_EDGE ? PLANE_EDGE : HALF_EDGE;
+    const chromaHeight = pixelFormat === 0 ? HALF_EDGE : PLANE_EDGE;
+    let changes: readonly PixelCoordinate[] = Array.from(
+        { length: PLANE_EDGE * PLANE_EDGE },
+        function (_value, index) {
+            return [ index % PLANE_EDGE, Math.trunc(index / PLANE_EDGE) ] as const;
+        }
+    );
+    const frame: Frame = {
+        frameType: 0,
+        lumaWidth: PLANE_EDGE,
+        lumaHeight: PLANE_EDGE,
+        chromaWidth,
+        chromaHeight,
+        lumaPlane: Uint8Array.from({ length: PLANE_EDGE * PLANE_EDGE }, function () {
+            return 235;
+        }),
+        blueChromaPlane: Uint8Array.from({ length: chromaWidth * chromaHeight }, function () {
+            return 128;
+        }),
+        redChromaPlane: Uint8Array.from({ length: chromaWidth * chromaHeight }, function () {
+            return 128;
+        }),
+        get changedPixels() {
+            return changes;
+        }
+    };
+    let active: Frame | false = frame;
+    return {
+        frame,
+        source: {
+            width: PICTURE_EDGE,
+            height: PICTURE_EDGE,
+            xOffset: offset,
+            yOffset: offset,
+            pixelFormat,
+            nextFrame() {
+                return active;
             }
+        },
+        setChanges(value: readonly PixelCoordinate[]): void {
+            changes = value;
+        },
+        finish(): void {
+            active = false;
+        }
+    };
+}
 
-            decoder.width = 2;
-            decoder.height = 2;
-            decoder.xOffset = 2;
-            decoder.yOffset = 2;
-            decoder.pixelFormat = pixelFormat;
-            frame.recy.fill(235);
-            frame.reccb.fill(128);
-            frame.reccr.fill(128);
-            frame.recy[2 * frame.rpyw + 2] = 16;
-            frame.changedPixels = [];
-            for (let row = 0; row < 6; row += 1) {
-                for (let column = 0; column < 6; column += 1) {
-                    frame.changedPixels.push([column, row]);
-                }
-            }
+function nextPicture(renderer: RGBRenderer): Uint8Array<ArrayBuffer> {
+    const picture = renderer.nextRGBFrame();
+    if (picture === false) {
+        throw new Error('Missing rendered picture');
+    }
+    return picture;
+}
 
-            decoder.nextFrame = () => frame;
-            const renderer = new RGBRenderer(decoder, { withAlphaChannel });
-            const white = withAlphaChannel ? [255, 255, 255, 255] : [255, 255, 255];
-            const black = withAlphaChannel ? [0, 0, 0, 255] : [0, 0, 0];
-            const expected = new Uint8Array([...white, ...white, ...black, ...white]);
-            const first = renderer.nextRGBFrame();
-            t.deepEqual(first, expected);
+function croppedPicture(withAlpha: boolean): Uint8Array {
+    const white = withAlpha ? [ 255, 255, 255, 255 ] : [ 255, 255, 255 ];
+    const black = withAlpha ? [ 0, 0, 0, 255 ] : [ 0, 0, 0 ];
+    return new Uint8Array([ ...white, ...white, ...black, ...white ]);
+}
 
-            frame.changedPixels = [];
-            t.deepEqual(renderer.nextRGBFrame(), expected);
-            if (first) {
-                first.fill(42);
-            }
+function assertStableFrameCopies(
+    t: ExecutionContext,
+    fixture: PictureFixture,
+    renderer: RGBRenderer,
+    expected: Uint8Array
+): void {
+    const first = nextPicture(renderer);
+    t.deepEqual(first, expected);
+    fixture.setChanges([]);
+    t.deepEqual(renderer.nextRGBFrame(), expected);
+    first.fill(42);
+    t.deepEqual(renderer.nextRGBFrame(), expected);
+}
 
-            t.deepEqual(renderer.nextRGBFrame(), expected);
-
-            decoder.nextFrame = () => false;
+for (const pixelFormat of [ 0, 2, 3 ]) {
+    for (const withAlphaChannel of [ false, true ]) {
+        test(`renders cropped borders for format ${pixelFormat}, alpha=${withAlphaChannel}`, function (t) {
+            const fixture = pictureFixture(pixelFormat, 2);
+            fixture.frame.lumaPlane[2 * PLANE_EDGE + 2] = 16;
+            const renderer = createRGBRenderer(fixture.source, { withAlphaChannel });
+            assertStableFrameCopies(t, fixture, renderer, croppedPicture(withAlphaChannel));
+            fixture.finish();
             t.false(renderer.nextRGBFrame());
         });
     }
 }
 
-async function pictureFrame(): Promise<{ decoder: Decoder; frame: Frame }> {
-    const stream = await readOggFile(path.resolve(__dirname, '../../../fixtures/320x240.ogg'));
-    const [logicalStream] = new TransportStream(stream).findLogicalStreams();
-    const decoder = new Decoder(logicalStream);
-    const frame = decoder.nextFrame();
-    if (!frame) {
-        throw new Error('Missing first frame');
-    }
-
-    Object.assign(decoder, { width: 2, height: 2, xOffset: 0, yOffset: 0 });
-    frame.recy.fill(235);
-    frame.reccb.fill(128);
-    frame.reccr.fill(128);
-    frame.changedPixels = [[0, 0], [1, 0], [0, 1], [1, 1]];
-    decoder.nextFrame = () => frame;
-    return { decoder, frame };
-}
-
-test('renders chroma changes without reconstructed luma pixels', async (t) => {
-    const { decoder, frame } = await pictureFrame();
-    frame.recy.fill(76);
-    const renderer = new RGBRenderer(decoder, { withAlphaChannel: true });
-    const gray = new Uint8Array([69, 69, 69, 255]);
-    const red = new Uint8Array([255, 0, 0, 255]);
-    const first = renderer.nextRGBFrame();
-    t.deepEqual(first, new Uint8Array([...gray, ...gray, ...gray, ...gray]));
-
-    frame.reccb.fill(85);
-    frame.reccr.fill(255);
-    frame.changedPixels = [];
-
-    t.deepEqual(renderer.nextRGBFrame(), new Uint8Array([...red, ...red, ...red, ...red]));
-    t.deepEqual(first, new Uint8Array([...gray, ...gray, ...gray, ...gray]));
+test('renders chroma changes without reconstructed luma pixels', function (t) {
+    const fixture = pictureFixture(0, 0);
+    fixture.frame.lumaPlane.fill(76);
+    const renderer = createRGBRenderer(fixture.source, { withAlphaChannel: true });
+    const first = nextPicture(renderer);
+    t.deepEqual(first, GRAY_PICTURE);
+    fixture.frame.blueChromaPlane.fill(85);
+    fixture.frame.redChromaPlane.fill(255);
+    fixture.setChanges([]);
+    t.deepEqual(renderer.nextRGBFrame(), RED_PICTURE);
+    t.deepEqual(first, GRAY_PICTURE);
 });
 
-test('renders filtered pixels outside the reconstruction list', async (t) => {
-    const { decoder, frame } = await pictureFrame();
-    const renderer = new RGBRenderer(decoder, { withAlphaChannel: true });
-    const white = new Uint8Array([255, 255, 255, 255]);
-    const black = new Uint8Array([0, 0, 0, 255]);
-    t.deepEqual(renderer.nextRGBFrame(), new Uint8Array([...white, ...white, ...white, ...white]));
-
-    frame.recy[frame.rpyw + 1] = 16;
-    frame.changedPixels = [[0, 0]];
-
-    t.deepEqual(renderer.nextRGBFrame(), new Uint8Array([...white, ...black, ...white, ...white]));
+test('renders filtered pixels outside the reconstruction list', function (t) {
+    const fixture = pictureFixture(0, 0);
+    const renderer = createRGBRenderer(fixture.source, { withAlphaChannel: true });
+    t.deepEqual(renderer.nextRGBFrame(), WHITE_PICTURE);
+    fixture.frame.lumaPlane[PLANE_EDGE + 1] = 16;
+    fixture.setChanges([ [ 0, 0 ] ]);
+    t.deepEqual(renderer.nextRGBFrame(), FILTERED_PICTURE);
 });

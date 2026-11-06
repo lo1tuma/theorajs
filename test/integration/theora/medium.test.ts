@@ -1,27 +1,21 @@
-import path from 'path';
-import test from 'ava';
-import { PNG } from 'pngjs';
+import path from 'node:path';
+import test, { type ExecutionContext } from 'ava';
 import pixelmatch from 'pixelmatch';
-import { TransportStream } from '../../../src/lib/ogg/transportStream';
-import { Decoder } from '../../../src/lib/theora/decoder';
+
+import { PNG } from 'pngjs';
+import type { Decoder } from '../../../src/lib/theora/decoder.ts';
+import { frameToPng, readPng, savePngDiff } from '../../lib/image-artifacts.ts';
 import {
-    savePngDiff,
-    readOggFile,
     decodeAllFramesForFile,
-    frameToPng,
-    readPng,
-    forAllRGBAFrames
-} from '../../lib/files';
+    forAllRGBAFrames,
+    readOggFile,
+    readVideoFixture
+} from '../../lib/video-fixtures.ts';
 
-const mediumComplexOggFile = path.resolve(__dirname, '../../fixtures/trailer_400p.ogg');
+const mediumComplexOggFile = path.resolve(import.meta.dirname, '../../fixtures/trailer_400p.ogg');
 
-test('provides the correct meta information about the video stream', async (t) => {
-    const byteStream = await readOggFile(mediumComplexOggFile);
-    const transportStream = new TransportStream(byteStream);
-
-    const [videoStream] = transportStream.findLogicalStreams();
-
-    const decoder = new Decoder(videoStream);
+test('provides the correct meta information about the video stream', async function (t) {
+    const decoder = await readVideoFixture(mediumComplexOggFile);
 
     t.is(decoder.width, 720);
     t.is(decoder.height, 400);
@@ -36,19 +30,29 @@ test('provides the correct meta information about the video stream', async (t) =
     t.is(decoder.yOffset, 0);
 });
 
-test('decodes all frames without errors', async (t) => {
+test('decodes all frames without errors', async function (t) {
     const frameCount = await decodeAllFramesForFile(mediumComplexOggFile);
 
     t.is(frameCount, 813);
 });
 
-test('matches independently generated RGBA references exactly', async (t) => {
+async function saveMismatch(t: ExecutionContext, expected: PNG, actual: PNG, frameIndex: number): Promise<void> {
+    const { width, height } = expected;
+    const diff = new PNG({ width, height });
+    pixelmatch(expected.data, actual.data, diff.data, width, height, { threshold: 0, includeAA: true });
+    const diffPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_diff.png`, diff);
+    const expectedPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_expected.png`, expected);
+    const actualPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_actual.png`, actual);
+    t.log(`Mismatched frame ${frameIndex}. Expected: ${expectedPath}. Actual: ${actualPath}. Diff: ${diffPath}.`);
+}
+
+test('matches independently generated RGBA references exactly', async function (t) {
     const byteStream = await readOggFile(mediumComplexOggFile);
 
     t.plan(813);
     let savedDiffs = 0;
 
-    await forAllRGBAFrames(byteStream, async (frame: Uint8Array, decoder: Decoder, frameIndex: number) => {
+    await forAllRGBAFrames(byteStream, async function (frame: Uint8Array, decoder: Decoder, frameIndex: number) {
         const actualPng = frameToPng(frame, decoder);
         const expectedPng = await readPng(`./test/reference-pictures/trailer_400p/frame_${frameIndex}.png`);
         const { width, height } = expectedPng;
@@ -56,15 +60,8 @@ test('matches independently generated RGBA references exactly', async (t) => {
         const matches = sameDimensions && Buffer.from(frame).equals(expectedPng.data);
 
         if (!matches && sameDimensions && savedDiffs < 3) {
-            const diff = new PNG({ width, height });
-            pixelmatch(expectedPng.data, actualPng.data, diff.data, width, height, { threshold: 0, includeAA: true });
             savedDiffs += 1;
-            const diffPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_diff.png`, diff);
-            const expectedPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_expected.png`, expectedPng);
-            const actualPath = await savePngDiff(`./trailer_400p_frame_${frameIndex}_actual.png`, actualPng);
-            t.log(
-                `Mismatched frame number ${frameIndex}. Expected: ${expectedPath}. Actual: ${actualPath}. Diff: ${diffPath}.`
-            );
+            await saveMismatch(t, expectedPng, actualPng, frameIndex);
         }
 
         t.true(matches, `Frame ${frameIndex}: expected ${width}x${height}, actual ${decoder.width}x${decoder.height}`);

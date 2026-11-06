@@ -1,70 +1,106 @@
-import path from 'path';
+import path from 'node:path';
 import test from 'ava';
-import { Packet } from '../../../../src/lib/ogg/packet';
-import { readOggFile } from '../../../lib/files';
-import { TransportStream } from '../../../../src/lib/ogg/transportStream';
-import { Decoder } from '../../../../src/lib/theora/decoder';
-import { Header } from '../../../../src/lib/theora/header';
+import type { LogicalStream } from '../../../../src/lib/ogg/logicalStream.ts';
+import type { Frame } from '../../../../src/lib/theora/frame.ts';
+import { createPacket } from '../../../../src/lib/ogg/packet.ts';
+import { createCoefficientStorage } from '../../../../src/lib/theora/coefficient-storage.ts';
+import { createDecoder } from '../../../../src/lib/theora/decoder.ts';
+import { invertDirectPrediction } from '../../../../src/lib/theora/direct-prediction.ts';
+import { readOggFile, requireTheoraStream } from '../../../lib/video-fixtures.ts';
 
-for (const initial of [32760, -32760]) {
-    test(`DC prediction preserves signed overflow from ${initial}`, async (t) => {
-        const stream = await readOggFile(path.resolve(__dirname, '../../../fixtures/320x240.ogg'));
-        const [logicalStream] = new TransportStream(stream).findLogicalStreams();
-        const frame = new Decoder(logicalStream).nextFrame();
-        if (!frame) {
-            t.fail('Missing first frame');
-            return;
-        }
-
+for (const initial of [ 32_760, -32_760 ]) {
+    test(`DC prediction preserves signed overflow from ${initial}`, function (t) {
         const delta = initial > 0 ? 100 : -100;
-        const coefficients = [new Int16Array([initial]), new Int16Array([delta]), new Int16Array([delta])];
-        Object.assign(frame, {
-            header: Object.assign(new Header(), { nlbs: 3, ncbs: 0, flbw: 3 }),
-            tables: { rasterToCodedOrder: [0, 1, 2], codedToRasterOrder: [0, 1, 2], biToMbi: [0, 0, 0] },
-            colorPlaneOffsets: [0, 3, 3],
-            mbmodes: [1],
-            bcoded: [1, 1, 1],
-            coeffs: coefficients
+        const { coefficients } = createCoefficientStorage(3);
+        coefficients.setDirect(0, initial);
+        coefficients.setDirect(1, delta);
+        coefficients.setDirect(2, delta);
+        invertDirectPrediction(coefficients, {
+            header: { lumaBlockCount: 3, chromaBlockCount: 0, lumaBlockWidth: 3, chromaBlockWidth: 0 },
+            mappings: {
+                rasterToCodedOrder(index) {
+                    return index;
+                },
+                codedToRasterOrder(index) {
+                    return index;
+                },
+                blockToMacroblock() {
+                    return 0;
+                },
+                blockToSuperblock() {
+                    return 0;
+                },
+                macroblockToBlocks() {
+                    return [ 0, 1, 2 ];
+                },
+                superBlockSize() {
+                    return 3;
+                }
+            },
+            modes: [ 1 ],
+            flags: [ 1, 1, 1 ]
         });
-        frame.invertDCPrediction();
-
-        t.is(coefficients[0][0], initial);
-        t.is(coefficients[1][0], initial > 0 ? -32676 : 32676);
-        t.is(coefficients[2][0], initial > 0 ? -32576 : 32576);
+        t.is(coefficients.value(0, 0), initial);
+        t.is(coefficients.value(1, 0), initial > 0 ? -32_676 : 32_676);
+        t.is(coefficients.value(2, 0), initial > 0 ? -32_576 : 32_576);
     });
 }
 
-test('decodes coefficients above the signed 8-bit range without wrapping', async (t) => {
-    const stream = await readOggFile(path.resolve(__dirname, '../../../fixtures/coefficient-range.ogv'));
-    const [logicalStream] = new TransportStream(stream).findLogicalStreams();
-    const decoder = new Decoder(logicalStream);
+test('decodes coefficients above the signed 8-bit range without wrapping', async function (t) {
+    const stream = await readOggFile(path.resolve(import.meta.dirname, '../../../fixtures/coefficient-range.ogv'));
+    const logicalStream = requireTheoraStream(stream);
+    const decoder = createDecoder(logicalStream);
     let count = 0;
 
-    for (let frame = decoder.nextFrame(); frame; frame = decoder.nextFrame()) {
-        t.deepEqual(frame.recy, new Uint8Array(32 * 32).fill(235));
-        t.deepEqual(frame.reccb, new Uint8Array(16 * 16).fill(128));
-        t.deepEqual(frame.reccr, new Uint8Array(16 * 16).fill(128));
+    for (let frame = decoder.nextFrame(); frame !== false; frame = decoder.nextFrame()) {
+        t.deepEqual(
+            frame.lumaPlane,
+            Uint8Array.from({ length: 32 * 32 }, function () {
+                return 235;
+            })
+        );
+        t.deepEqual(
+            frame.blueChromaPlane,
+            Uint8Array.from({ length: 16 * 16 }, function () {
+                return 128;
+            })
+        );
+        t.deepEqual(
+            frame.redChromaPlane,
+            Uint8Array.from({ length: 16 * 16 }, function () {
+                return 128;
+            })
+        );
         count += 1;
     }
 
     t.is(count, 1);
 });
 
-test('an empty frame packet repeats the previous frame', async (t) => {
-    const stream = await readOggFile(path.resolve(__dirname, '../../../fixtures/coefficient-range.ogv'));
-    const [logicalStream] = new TransportStream(stream).findLogicalStreams();
-    const decoder = new Decoder(logicalStream);
+function repeatedFrames(logicalStream: LogicalStream): readonly [Frame, Frame] {
+    let repeatPrevious = false;
+    const decoder = createDecoder({
+        ...logicalStream,
+        nextPacket() {
+            return repeatPrevious ? createPacket() : logicalStream.nextPacket();
+        }
+    });
     const first = decoder.nextFrame();
-    logicalStream.nextPacket = () => new Packet();
+    repeatPrevious = true;
     const repeated = decoder.nextFrame();
-
-    if (!first || !repeated) {
-        t.fail('Missing decoded frame');
-        return;
+    if (first === false || repeated === false) {
+        throw new Error('Missing decoded frame');
     }
+    return [ first, repeated ];
+}
 
-    t.deepEqual(repeated.recy, first.recy);
-    t.deepEqual(repeated.reccb, first.reccb);
-    t.deepEqual(repeated.reccr, first.reccr);
+test('an empty frame packet repeats the previous frame', async function (t) {
+    const stream = await readOggFile(path.resolve(import.meta.dirname, '../../../fixtures/coefficient-range.ogv'));
+    const logicalStream = requireTheoraStream(stream);
+    const [ first, repeated ] = repeatedFrames(logicalStream);
+
+    t.deepEqual(repeated.lumaPlane, first.lumaPlane);
+    t.deepEqual(repeated.blueChromaPlane, first.blueChromaPlane);
+    t.deepEqual(repeated.redChromaPlane, first.redChromaPlane);
     t.deepEqual(repeated.changedPixels, []);
 });

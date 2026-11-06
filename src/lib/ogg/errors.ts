@@ -1,6 +1,6 @@
 export class OggError extends Error {
-    constructor(message: string) {
-        super(message);
+    public constructor(message: string, options: ErrorOptions) {
+        super(message, options);
         this.name = 'OggError';
     }
 }
