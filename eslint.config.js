@@ -28,6 +28,6 @@ export default [
     { ...nodeConfig, files: [ 'test/**/*.ts', '*.config.js' ] },
     { ...nodeConfigFileConfig, files: [ '*.config.js' ] },
     { ...browserConfig, files: [ 'src/browser/**/*.ts' ] },
-    { ...avaConfig, files: [ 'test/**/*.test.ts', 'test/**/*.bench.ts' ] },
-    { ...testSupportConfig, files: [ 'test/lib/**/*.ts' ] }
+    { ...avaConfig, files: [ 'test/{unit,integration,artifacts,browser}/**/*.test.ts', 'test/**/*.bench.ts' ] },
+    { ...testSupportConfig, files: [ 'test/lib/**/*.ts', 'test/overkill/**/*.ts', 'test/runner/**/*.ts' ] }
 ];

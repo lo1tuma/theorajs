@@ -1,4 +1,4 @@
-import { cp, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
@@ -6,15 +6,14 @@ import test from 'ava';
 import ts from 'typescript';
 
 type ExecutionOptions = { readonly cwd: string; };
-type ExecutionResult = { readonly stdout: string; };
 
-async function execute(command: string, args: readonly string[], options: ExecutionOptions): Promise<ExecutionResult> {
+async function execute(command: string, args: readonly string[], options: ExecutionOptions): Promise<void> {
     return new Promise(function (resolve, reject) {
-        execFile(command, args, { ...options, timeout: 60_000 }, function (error, stdout) {
+        execFile(command, args, { ...options, timeout: 60_000 }, function (error, stdout, stderr) {
             if (error === null) {
-                resolve({ stdout });
+                resolve();
             } else {
-                reject(new Error('Artifact process failed.', { cause: error }));
+                reject(new Error(`Artifact process failed.\n${stdout}${stderr}`, { cause: error }));
             }
         });
     });
@@ -27,25 +26,61 @@ async function stageArtifacts(): Promise<string> {
     await cp(path.join(root, 'build/test'), path.join(directory, 'test'), { recursive: true });
     await writeFile(path.join(directory, 'package.json'), JSON.stringify({ type: 'module' }));
     await symlink(path.join(root, 'node_modules'), path.join(directory, 'node_modules'), 'dir');
+    await writeFile(
+        path.join(directory, 'overkill.config.js'),
+        `
+import { defineConfig } from '@overkill-dev/test/config';
+import { reportToFile } from './test/runner/report.js';
+export const config = defineConfig({
+    profiles: {
+        reference: {
+            testFamily: 'integration',
+            files: { include: [ 'test/overkill/**/*.test.js' ] },
+            reporters: [ reportToFile('result.json') ]
+        }
+    }
+});
+`
+    );
     return directory;
 }
 
-test('decodes independent planes using only emitted artifacts', async function (t) {
+test.serial('decodes independent planes using only emitted artifacts', async function (t) {
     const directory = await stageArtifacts();
     t.teardown(async function () {
         await rm(directory, { recursive: true, force: true });
     });
-    const result = await execute(process.execPath, [
-        path.join(root, 'node_modules/ava/entrypoints/cli.js'),
-        'test/integration/theora/reference.test.js'
+    await execute(path.join(root, 'node_modules/.bin/overkill'), [
+        'run',
+        '--profile',
+        'reference'
     ], { cwd: directory });
-    t.regex(result.stdout, /2 tests passed/u);
+    const result: unknown = JSON.parse(await readFile(path.join(directory, 'result.json'), 'utf8'));
+    t.like(result, { status: 'passed', summary: { planned: 2, passed: 2, failed: 0 }, runnerErrors: [] });
     await rm(path.join(directory, 'src/lib/theora/decoder.js'));
     await t.throwsAsync(
         execute(process.execPath, [ '--input-type=module', '-e', 'await import("./src/lib/theora/decoder.js")' ], {
             cwd: directory
         })
     );
+});
+
+test.serial('independent plane checks reject a corrupted expected byte', async function (t) {
+    const directory = await stageArtifacts();
+    t.teardown(async function () {
+        await rm(directory, { recursive: true, force: true });
+    });
+    const reference = path.join(directory, 'test/fixtures/prediction.yuv');
+    const expected = await readFile(reference);
+    expected[0] = (expected.readUInt8(0) + 1) % 256;
+    await writeFile(reference, expected);
+    await t.throwsAsync(execute(path.join(root, 'node_modules/.bin/overkill'), [
+        'run',
+        '--profile',
+        'reference'
+    ], { cwd: directory }));
+    const result: unknown = JSON.parse(await readFile(path.join(directory, 'result.json'), 'utf8'));
+    t.like(result, { status: 'failed', summary: { planned: 2, passed: 1, failed: 1 }, runnerErrors: [] });
 });
 
 test('declarations work without original TypeScript sources', async function (t) {

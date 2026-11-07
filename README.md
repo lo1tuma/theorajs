@@ -30,7 +30,11 @@ Serve them over HTTP with the video fixture and a container whose id is `test`:
 
 `npm run test:bench` runs the historical CPU-frequency-based benchmarks.
 Their thresholds are host-dependent and are separate from correctness checks.
-`npm test` runs lint, unit tests, and integration tests.
+`npm test` runs lint, unit tests, independent-reference tests, and integration tests.
+The independent-reference family runs on pinned Overkill. Other families retain
+AVA. `npm run test:reference` runs the migrated family; `npm run test:runner`
+verifies async completion, assertions, cleanup, timeout, and exit behavior through
+structured results. Runner verification also runs with the unit tests.
 
 Development artifacts are checked separately:
 
