@@ -23,29 +23,57 @@ async function execute(command: string, args: readonly string[], options: Execut
     });
 }
 const root = path.resolve(import.meta.dirname, '../../..');
+const decoderConsumer = `
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { createByteStream } from './src/lib/stream/byteStream.js';
+import { createTransportStream } from './src/lib/ogg/transportStream.js';
+import { createDecoder } from './src/lib/theora/decoder.js';
+import { isTheora } from './src/lib/theora/headers/protocol.js';
+
+const input = await readFile('prediction.ogv');
+const bytes = createByteStream();
+bytes.setData(input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength));
+const stream = createTransportStream(bytes).findLogicalStreams().find(function isVideoStream(candidate) {
+    const packet = candidate.getFirstPacket();
+    return packet !== false && isTheora(packet);
+});
+assert.ok(stream);
+const decoder = createDecoder(stream);
+assert.equal(decoder.width, 32);
+assert.equal(decoder.height, 32);
+assert.equal(decoder.pixelFormat, 0);
+const expected = await readFile('prediction.yuv');
+let offset = 0;
+let frameCount = 0;
+for (let frame = decoder.nextFrame(); frame !== false; frame = decoder.nextFrame()) {
+    for (const [ plane, width, height ] of [
+        [ frame.lumaPlane, 32, 32 ],
+        [ frame.blueChromaPlane, 16, 16 ],
+        [ frame.redChromaPlane, 16, 16 ]
+    ]) {
+        for (let row = height - 1; row >= 0; row -= 1) {
+            const actual = plane.subarray(row * width, (row + 1) * width);
+            assert.equal(Buffer.compare(actual, expected.subarray(offset, offset + width)), 0,
+                'Decoded plane differs from independent reference');
+            offset += width;
+        }
+    }
+    frameCount += 1;
+}
+assert.equal(frameCount, 4);
+assert.equal(offset, expected.length);
+`;
 
 async function stageArtifacts(): Promise<string> {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'decoder-artifacts-'));
     await cp(path.join(root, 'build/src/lib'), path.join(directory, 'src/lib'), { recursive: true });
-    await cp(path.join(root, 'build/test'), path.join(directory, 'test'), { recursive: true });
+    await Promise.all([ 'prediction.ogv', 'prediction.yuv' ].map(async function copyFixture(name) {
+        return cp(path.join(root, 'build/test/fixtures', name), path.join(directory, name));
+    }));
     await writeFile(path.join(directory, 'package.json'), JSON.stringify({ type: 'module' }));
     await symlink(path.join(root, 'node_modules'), path.join(directory, 'node_modules'), 'dir');
-    await writeFile(
-        path.join(directory, 'overkill.config.js'),
-        `
-import { defineConfig } from '@overkill-dev/test/config';
-export const config = defineConfig({
-    runtimeStateDir: 'target/.overkill',
-    profiles: {
-        reference: {
-            testFamily: 'integration',
-            timeouts: { collectionMilliseconds: 30_000 },
-            files: { include: [ 'test/integration/theora/reference.test.js' ] }
-        }
-    }
-});
-`
-    );
+    await writeFile(path.join(directory, 'decoder-consumer.mjs'), decoderConsumer);
     return directory;
 }
 
@@ -54,16 +82,11 @@ test.serial('decodes independent planes using only emitted artifacts', async fun
     t.teardown(async function () {
         await rm(directory, { recursive: true, force: true });
     });
-    await execute(path.join(root, 'node_modules/.bin/overkill'), [
-        'run',
-        '--profile',
-        'reference'
-    ], { cwd: directory });
+    await execute(process.execPath, [ 'decoder-consumer.mjs' ], { cwd: directory });
     await rm(path.join(directory, 'src/lib/theora/decoder.js'));
     await t.throwsAsync(
-        execute(process.execPath, [ '--input-type=module', '-e', 'await import("./src/lib/theora/decoder.js")' ], {
-            cwd: directory
-        })
+        execute(process.execPath, [ 'decoder-consumer.mjs' ], { cwd: directory }),
+        { message: /ERR_MODULE_NOT_FOUND/u }
     );
 });
 
@@ -72,17 +95,17 @@ test.serial('independent plane checks reject a corrupted expected byte', async f
     t.teardown(async function () {
         await rm(directory, { recursive: true, force: true });
     });
-    const reference = path.join(directory, 'test/fixtures/prediction.yuv');
+    const reference = path.join(directory, 'prediction.yuv');
     const expected = await readFile(reference);
     expected[0] = (expected.readUInt8(0) + 1) % 256;
     await writeFile(reference, expected);
     await t.throwsAsync(
-        execute(path.join(root, 'node_modules/.bin/overkill'), [
-            'run',
-            '--profile',
-            'reference'
-        ], { cwd: directory }),
-        { instanceOf: Error, message: /^Artifact process failed with code 1\..*Frame 0, plane 0/su }
+        execute(process.execPath, [ 'decoder-consumer.mjs' ], { cwd: directory }),
+        {
+            instanceOf: Error,
+            message:
+                /^Artifact process failed with code 1\..*ERR_ASSERTION.*Decoded plane differs from independent reference/su
+        }
     );
 });
 

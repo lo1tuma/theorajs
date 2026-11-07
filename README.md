@@ -45,7 +45,8 @@ npm run install:browser
 npm run test:browser
 ```
 
-Artifact checks consume emitted ESM and declarations outside the source tree.
+Artifact checks run a standalone Node decoder consumer and compile against
+emitted declarations outside the source tree.
 Browser checks use pinned Playwright Chromium and exercise the player and worker
 bundles. Chromium coverage does not establish Chrome, Firefox or Safari coverage.
 Playwright is temporary until Overkill proves browser execution, provisioning,
