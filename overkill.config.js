@@ -5,7 +5,7 @@ export const config = defineConfig({
         reference: {
             testFamily: 'integration',
             timeouts: { collectionMilliseconds: 30_000 },
-            files: { include: [ 'build/test/overkill/**/*.test.js' ] }
+            files: { include: [ 'build/test/integration/theora/reference.test.js' ] }
         }
     }
 });

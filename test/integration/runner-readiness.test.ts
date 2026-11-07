@@ -31,7 +31,8 @@ for (
             return failure.kind === 'cleanup-error' && failure.error.message === 'Cleanup completed';
         }));
         t.true(failures.some(function expectedFailure(failure) {
-            return failure.kind === failureKind;
+            return failure.kind === failureKind &&
+                (failure.kind !== 'timeout' || failure.deadlineMilliseconds === 100);
         }));
     });
 }

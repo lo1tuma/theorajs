@@ -34,7 +34,7 @@ Their thresholds are host-dependent and are separate from correctness checks.
 The independent-reference family runs on pinned Overkill. Other families retain
 AVA. `npm run test:reference` runs the migrated family; `npm run test:runner`
 verifies async completion, assertions, cleanup, timeout, and exit behavior through
-structured results. Runner verification also runs with the unit tests.
+structured results. Runner verification also runs with the integration tests.
 
 Development artifacts are checked separately:
 

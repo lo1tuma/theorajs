@@ -46,11 +46,11 @@
         "pretest:browser": "npm run build",
         "test:browser": "ava 'build/test/browser/**/*.test.js' --timeout=2m",
         "pretest:integration": "npm run test-setup",
-        "test:integration": "ava 'build/test/integration/**/*.test.js' --timeout=10m",
+        "test:integration": "ava 'build/test/integration/**/*.test.js' '!build/test/integration/theora/reference.test.js' --timeout=10m",
         "pretest:reference": "npm run test-setup",
         "test:reference": "overkill run --profile reference",
         "pretest:runner": "npm run test-setup",
-        "test:runner": "ava 'build/test/unit/runner.test.js' --timeout=2m",
+        "test:runner": "ava 'build/test/integration/runner-readiness.test.js' --timeout=2m",
         "pretest:unit": "npm run test-setup",
         "test:unit": "ava 'build/test/unit/**/*.test.js'",
         "test-setup": "npm run compile && npm run copy:fixtures"
@@ -62,7 +62,8 @@
             "build/test/integration/**/*.test.js",
             "build/test/benchmarks/**/*.bench.js",
             "build/test/artifacts/**/*.test.js",
-            "build/test/browser/**/*.test.js"
+            "build/test/browser/**/*.test.js",
+            "!build/test/integration/theora/reference.test.js"
         ]
     },
     "devEngines": {
