@@ -30,7 +30,12 @@ Serve them over HTTP with the video fixture and a container whose id is `test`:
 
 `npm run test:bench` runs the historical CPU-frequency-based benchmarks.
 Their thresholds are host-dependent and are separate from correctness checks.
-`npm test` runs lint, unit tests, and integration tests.
+`npm test` runs lint, unit tests, independent-reference tests, and integration tests.
+The independent-reference family runs on pinned Overkill. Other families retain
+AVA. `npm run test:reference` runs the migrated family through the Overkill CLI
+with its standard reporting.
+
+Overkill stores generated state in `target/.overkill`.
 
 Development artifacts are checked separately:
 
@@ -40,7 +45,8 @@ npm run install:browser
 npm run test:browser
 ```
 
-Artifact checks consume emitted ESM and declarations outside the source tree.
+Artifact checks run a standalone Node decoder consumer and compile against
+emitted declarations outside the source tree.
 Browser checks use pinned Playwright Chromium and exercise the player and worker
 bundles. Chromium coverage does not establish Chrome, Firefox or Safari coverage.
 Playwright is temporary until Overkill proves browser execution, provisioning,

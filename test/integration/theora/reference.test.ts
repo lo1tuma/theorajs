@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import test, { type ExecutionContext } from 'ava';
+import { suite, test, type TestScope } from '@overkill-dev/test';
 import type { Frame } from '../../../src/lib/theora/frame.ts';
 import { readVideoFixture } from '../../lib/video-fixtures.ts';
 
@@ -16,7 +16,12 @@ function topToBottom(plane: ReferencePlane): Buffer {
     return actual;
 }
 
-function assertReferenceFrame(t: ExecutionContext, frame: Frame, expected: Buffer, frameCount: number): number {
+function assertReferenceFrame(
+    scope: TestScope,
+    frame: Frame,
+    expected: Buffer,
+    frameCount: number
+): number {
     let offset = 0;
     const planes = [
         { samples: frame.lumaPlane, width: 32, height: 32 },
@@ -25,32 +30,39 @@ function assertReferenceFrame(t: ExecutionContext, frame: Frame, expected: Buffe
     ];
     for (const [ index, plane ] of planes.entries()) {
         const actual = topToBottom(plane);
-        t.true(actual.equals(expected.subarray(offset, offset + actual.length)), `Frame ${frameCount}, plane ${index}`);
+        scope.assert.true(actual.equals(expected.subarray(offset, offset + actual.length)), {
+            message: `Frame ${frameCount}, plane ${index}`
+        });
         offset += actual.length;
     }
 
     return offset;
 }
 
-test('reads the independent reference geometry', async function (t) {
-    const decoder = await readVideoFixture(path.resolve(import.meta.dirname, '../../fixtures/prediction.ogv'));
-    t.is(decoder.width, 32);
-    t.is(decoder.height, 32);
-    t.is(decoder.pixelFormat, 0);
-});
+export const testNode = suite('independent reference', [
+    test('reads the independent reference geometry', async function (scope) {
+        const decoder = await readVideoFixture(path.resolve(import.meta.dirname, '../../fixtures/prediction.ogv'));
+        scope.assert.equal(decoder.width, 32);
+        scope.assert.equal(decoder.height, 32);
+        scope.assert.equal(decoder.pixelFormat, 0);
+        return scope.assert.collect();
+    }),
 
-test('matches independent key and inter frame planes byte for byte', async function (t) {
-    const fixture = path.resolve(import.meta.dirname, '../../fixtures/prediction.ogv');
-    const expected = await fs.readFile(path.resolve(import.meta.dirname, '../../fixtures/prediction.yuv'));
-    const decoder = await readVideoFixture(fixture);
-    let offset = 0;
-    let frameCount = 0;
+    test('matches independent key and inter frame planes byte for byte', async function (scope) {
+        const [ decoder, expected ] = await Promise.all([
+            readVideoFixture(path.resolve(import.meta.dirname, '../../fixtures/prediction.ogv')),
+            fs.readFile(path.resolve(import.meta.dirname, '../../fixtures/prediction.yuv'))
+        ]);
+        let offset = 0;
+        let frameCount = 0;
 
-    for (let frame = decoder.nextFrame(); frame !== false; frame = decoder.nextFrame()) {
-        offset += assertReferenceFrame(t, frame, expected.subarray(offset), frameCount);
-        frameCount += 1;
-    }
+        for (let frame = decoder.nextFrame(); frame !== false; frame = decoder.nextFrame()) {
+            offset += assertReferenceFrame(scope, frame, expected.subarray(offset), frameCount);
+            frameCount += 1;
+        }
 
-    t.is(frameCount, 4);
-    t.is(offset, expected.length);
-});
+        scope.assert.equal(frameCount, 4);
+        scope.assert.equal(offset, expected.length);
+        return scope.assert.collect();
+    })
+]);
