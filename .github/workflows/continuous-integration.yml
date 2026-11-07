@@ -40,10 +40,10 @@ jobs:
                   test "$(npm --version)" = "$expected"
             - name: Retrieve LFS fixtures
               run: git lfs pull
-            - name: Verify LFS fixtures
-              run: npm run verify:lfs
             - name: Install dependencies
               run: npm ci
+            - name: Verify LFS fixtures
+              run: npm run verify:lfs
             - name: Correctness checks
               run: |
                   mkdir -p target/ci
@@ -93,10 +93,10 @@ jobs:
                   test "$(npm --version)" = "$expected"
             - name: Retrieve LFS fixtures
               run: git lfs pull
-            - name: Verify LFS fixtures
-              run: npm run verify:lfs
             - name: Install dependencies
               run: npm ci
+            - name: Verify LFS fixtures
+              run: npm run verify:lfs
             - name: Install Chromium
               run: |
                   mkdir -p target/ci
