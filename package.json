@@ -50,7 +50,8 @@
         "test:reference": "overkill run --profile reference",
         "pretest:unit": "npm run test-setup",
         "test:unit": "ava 'build/test/unit/**/*.test.js'",
-        "test-setup": "npm run compile && npm run copy:fixtures"
+        "test-setup": "npm run compile && npm run copy:fixtures",
+        "verify:lfs": "git lfs fsck --objects --pointers && node test/scripts/verify-lfs.ts"
     },
     "ava": {
         "snapshotDir": "test/integration/snapshots",

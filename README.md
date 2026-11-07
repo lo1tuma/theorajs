@@ -58,6 +58,19 @@ The compiler enforces strict checks. ESLint uses the shared Enormora presets
 with zero warnings. Required bitwise expressions are isolated in the integer
 arithmetic module, with an exception on each expression only.
 
+## Continuous integration
+
+Pull requests, merge queues and pushes to `master` run three required checks:
+Node checks, Chromium smoke, and Workflow security analysis.
+Runtime jobs independently install pinned tooling and dependencies, retrieve
+LFS fixtures without caching, and verify their sizes and SHA-256.
+
+Reproduce checks with the development commands above and `npm run verify:lfs`.
+On Linux, provision Chromium dependencies with
+`npm run install:browser -- --with-deps` before browser checks.
+Failure artifacts retain the last 1 MiB of each command log and up to three
+expected/actual/diff image sets for seven days. Full output stays in Actions logs.
+
 ## Granule positions
 
 `Page.granulePosition` contains `lowBits` (unsigned 32-bit) and `highBits`
