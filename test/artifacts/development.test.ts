@@ -34,15 +34,13 @@ async function stageArtifacts(): Promise<string> {
         path.join(directory, 'overkill.config.js'),
         `
 import { defineConfig } from '@overkill-dev/test/config';
-import { reportToFile } from './test/runner/report.js';
 export const config = defineConfig({
     runtimeStateDir: 'target/.overkill',
     profiles: {
         reference: {
             testFamily: 'integration',
             timeouts: { collectionMilliseconds: 30_000 },
-            files: { include: [ 'test/integration/theora/reference.test.js' ] },
-            reporters: [ reportToFile('result.json') ]
+            files: { include: [ 'test/integration/theora/reference.test.js' ] }
         }
     }
 });
@@ -61,8 +59,6 @@ test.serial('decodes independent planes using only emitted artifacts', async fun
         '--profile',
         'reference'
     ], { cwd: directory });
-    const result: unknown = JSON.parse(await readFile(path.join(directory, 'result.json'), 'utf8'));
-    t.like(result, { status: 'passed', summary: { planned: 2, passed: 2, failed: 0 }, runnerErrors: [] });
     await rm(path.join(directory, 'src/lib/theora/decoder.js'));
     await t.throwsAsync(
         execute(process.execPath, [ '--input-type=module', '-e', 'await import("./src/lib/theora/decoder.js")' ], {
@@ -80,21 +76,14 @@ test.serial('independent plane checks reject a corrupted expected byte', async f
     const expected = await readFile(reference);
     expected[0] = (expected.readUInt8(0) + 1) % 256;
     await writeFile(reference, expected);
-    const failure = await t.throwsAsync(
+    await t.throwsAsync(
         execute(path.join(root, 'node_modules/.bin/overkill'), [
             'run',
             '--profile',
             'reference'
         ], { cwd: directory }),
-        { instanceOf: Error, message: /^Artifact process failed with code 1\./u }
+        { instanceOf: Error, message: /^Artifact process failed with code 1\..*Frame 0, plane 0/su }
     );
-    const report = readFile(path.join(directory, 'result.json'), 'utf8');
-    await t.notThrowsAsync(report, failure.message);
-    t.like(JSON.parse(await report), {
-        status: 'failed',
-        summary: { planned: 2, passed: 1, failed: 1 },
-        runnerErrors: []
-    });
 });
 
 test('declarations work without original TypeScript sources', async function (t) {

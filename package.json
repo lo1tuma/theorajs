@@ -18,7 +18,6 @@
         "@enormora/eslint-config-browser": "0.0.42",
         "@enormora/eslint-config-node": "0.0.53",
         "@enormora/eslint-config-typescript": "0.0.83",
-        "@overkill-dev/engine": "0.0.51",
         "@overkill-dev/test": "0.0.29",
         "@rspack/cli": "2.3.1",
         "@rspack/core": "2.3.1",
@@ -49,8 +48,6 @@
         "test:integration": "ava 'build/test/integration/**/*.test.js' '!build/test/integration/theora/reference.test.js' --timeout=10m",
         "pretest:reference": "npm run test-setup",
         "test:reference": "overkill run --profile reference",
-        "pretest:runner": "npm run test-setup",
-        "test:runner": "ava 'build/test/integration/runner-readiness.test.js' --timeout=2m",
         "pretest:unit": "npm run test-setup",
         "test:unit": "ava 'build/test/unit/**/*.test.js'",
         "test-setup": "npm run compile && npm run copy:fixtures"

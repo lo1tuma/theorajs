@@ -35,6 +35,6 @@ export default [
     },
     {
         ...testSupportConfig,
-        files: [ 'test/lib/**/*.ts', 'test/integration/theora/reference.test.ts', 'test/runner/**/*.ts' ]
+        files: [ 'test/lib/**/*.ts', 'test/integration/theora/reference.test.ts' ]
     }
 ];
