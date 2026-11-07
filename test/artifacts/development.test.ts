@@ -35,6 +35,7 @@ export const config = defineConfig({
     profiles: {
         reference: {
             testFamily: 'integration',
+            timeouts: { collectionMilliseconds: 30_000 },
             files: { include: [ 'test/overkill/**/*.test.js' ] },
             reporters: [ reportToFile('result.json') ]
         }

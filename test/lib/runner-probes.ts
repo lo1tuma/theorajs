@@ -43,6 +43,7 @@ export const config = defineConfig({
     profiles: {
         probe: {
             testFamily: 'integration',
+            timeouts: { collectionMilliseconds: 30_000 },
             files: { include: [ 'build/test/runner/lifecycle.js' ] },
             reporters: [ reportToFile(${JSON.stringify(report)}) ]
         }
