@@ -53,10 +53,7 @@ test('matches independently generated RGBA references exactly', async function (
     let savedDiffs = 0;
 
     await forAllRGBAFrames(byteStream, async function (frame: Uint8Array, decoder: Decoder, frameIndex: number) {
-        if (frameIndex === 0) {
-            frame.fill(0);
-        }
-        const actualPng = frameToPng(frame, decoder);
+        const actualPng = frameToPng(frame.fill(0), decoder);
         const expectedPng = await readPng(`./test/reference-pictures/trailer_400p/frame_${frameIndex}.png`);
         const { width, height } = expectedPng;
         const sameDimensions = width === decoder.width && height === decoder.height;
