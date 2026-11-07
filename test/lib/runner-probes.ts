@@ -40,6 +40,7 @@ export async function runProbe(directory: string, title: string): Promise<ProbeR
 import { defineConfig } from ${JSON.stringify(import.meta.resolve('@overkill-dev/test/config'))};
 import { reportToFile } from ${JSON.stringify(reporter)};
 export const config = defineConfig({
+    runtimeStateDir: 'target/.overkill',
     profiles: {
         probe: {
             testFamily: 'integration',

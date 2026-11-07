@@ -36,6 +36,8 @@ AVA. `npm run test:reference` runs the migrated family; `npm run test:runner`
 verifies async completion, assertions, cleanup, timeout, and exit behavior through
 structured results. Runner verification also runs with the integration tests.
 
+Overkill stores generated state in `target/.overkill`.
+
 Development artifacts are checked separately:
 
 ```sh

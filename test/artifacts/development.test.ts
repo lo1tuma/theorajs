@@ -36,6 +36,7 @@ async function stageArtifacts(): Promise<string> {
 import { defineConfig } from '@overkill-dev/test/config';
 import { reportToFile } from './test/runner/report.js';
 export const config = defineConfig({
+    runtimeStateDir: 'target/.overkill',
     profiles: {
         reference: {
             testFamily: 'integration',
