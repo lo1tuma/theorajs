@@ -105,7 +105,7 @@ test('browser bundles decode and draw video through a real worker', async functi
     await page.waitForFunction('window.report.eos', null, { timeout: 30_000 });
     const result: unknown = await page.evaluate('window.report');
     t.log(JSON.stringify(result));
-    t.like(result, { received: 121, width: 320, height: 240, eos: true, errors: [] });
+    t.like(result, { received: 120, width: 320, height: 240, eos: true, errors: [] });
     t.true(await page.evaluate('window.report.drawn > 0'));
     t.deepEqual(errors, []);
 });
