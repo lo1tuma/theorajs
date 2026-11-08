@@ -1,0 +1,97 @@
+---
+name: Continuous integration
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        types: [opened, reopened, synchronize]
+    merge_group:
+
+permissions: {}
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+    node:
+        name: Node checks
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            - name: Use pinned Node.js
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version-file: package.json
+                  package-manager-cache: false
+            - name: Retrieve LFS fixtures
+              run: git lfs pull
+            - name: Install dependencies
+              run: npm ci
+            - name: Verify LFS fixtures
+              run: npm run verify:lfs
+            - name: Correctness checks
+              run: npm test
+            - name: Development artifacts
+              run: npm run test:artifacts
+            - name: Retain failure diagnostics
+              if: failure()
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: node-failure
+                  path: build/test-output/integration/*.png
+                  retention-days: 7
+                  if-no-files-found: ignore
+
+    chromium:
+        name: Chromium smoke
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            - name: Use pinned Node.js
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version-file: package.json
+                  package-manager-cache: false
+            - name: Retrieve LFS fixtures
+              run: git lfs pull
+            - name: Install dependencies
+              run: npm ci
+            - name: Verify LFS fixtures
+              run: npm run verify:lfs
+            - name: Install Chromium
+              run: npm run install:browser -- --with-deps
+            - name: Browser smoke tests
+              run: npm run test:browser
+
+    workflow-security:
+        name: Workflow security analysis
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            - name: Run zizmor
+              uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+              with:
+                  version: 1.26.1
+                  persona: pedantic
+                  min-severity: informational
+                  min-confidence: low
+                  config: .github/zizmor.yml
+                  advanced-security: false
+                  annotations: true
