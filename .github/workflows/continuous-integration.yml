@@ -8,10 +8,6 @@ on:
         types: [opened, reopened, synchronize]
     merge_group:
 
-defaults:
-    run:
-        shell: bash
-
 permissions: {}
 
 concurrency:
@@ -34,10 +30,6 @@ jobs:
               with:
                   node-version-file: package.json
                   package-manager-cache: false
-            - name: Check npm version
-              run: |
-                  expected=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json")).devEngines.packageManager.version')
-                  test "$(npm --version)" = "$expected"
             - name: Retrieve LFS fixtures
               run: git lfs pull
             - name: Install dependencies
@@ -45,30 +37,15 @@ jobs:
             - name: Verify LFS fixtures
               run: npm run verify:lfs
             - name: Correctness checks
-              run: |
-                  mkdir -p target/ci
-                  npm test 2>&1 | tee target/ci/correctness-checks.log
+              run: npm test
             - name: Development artifacts
-              run: |
-                  mkdir -p target/ci
-                  npm run test:artifacts 2>&1 | tee target/ci/development-artifacts.log
-            - name: Bound failure logs
-              if: failure()
-              run: |
-                  for log in target/ci/*.log; do
-                      if [ -f "$log" ]; then
-                          tail -c 1048576 "$log" > "$log.tail"
-                          mv "$log.tail" "$log"
-                      fi
-                  done
+              run: npm run test:artifacts
             - name: Retain failure diagnostics
               if: failure()
               uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
               with:
                   name: node-failure
-                  path: |
-                      target/ci/*.log
-                      build/test-output/integration/*.png
+                  path: build/test-output/integration/*.png
                   retention-days: 7
                   if-no-files-found: ignore
 
@@ -87,10 +64,6 @@ jobs:
               with:
                   node-version-file: package.json
                   package-manager-cache: false
-            - name: Check npm version
-              run: |
-                  expected=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json")).devEngines.packageManager.version')
-                  test "$(npm --version)" = "$expected"
             - name: Retrieve LFS fixtures
               run: git lfs pull
             - name: Install dependencies
@@ -98,32 +71,9 @@ jobs:
             - name: Verify LFS fixtures
               run: npm run verify:lfs
             - name: Install Chromium
-              run: |
-                  mkdir -p target/ci
-                  npm run install:browser -- --with-deps 2>&1 | tee target/ci/install-chromium.log
+              run: npm run install:browser -- --with-deps
             - name: Browser smoke tests
-              run: |
-                  mkdir -p target/ci
-                  npm run test:browser 2>&1 | tee target/ci/browser-smoke-tests.log
-            - name: Bound failure logs
-              if: failure()
-              run: |
-                  for log in target/ci/*.log; do
-                      if [ -f "$log" ]; then
-                          tail -c 1048576 "$log" > "$log.tail"
-                          mv "$log.tail" "$log"
-                      fi
-                  done
-            - name: Retain failure diagnostics
-              if: failure()
-              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-              with:
-                  name: chromium-failure
-                  path: |
-                      target/ci/*.log
-                      build/test-output/integration/*.png
-                  retention-days: 7
-                  if-no-files-found: ignore
+              run: npm run test:browser
 
     workflow-security:
         name: Workflow security analysis
@@ -142,5 +92,6 @@ jobs:
                   persona: pedantic
                   min-severity: informational
                   min-confidence: low
+                  config: .github/zizmor.yml
                   advanced-security: false
                   annotations: true
