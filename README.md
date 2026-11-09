@@ -160,3 +160,30 @@ Alpha is 255 for every pixel. PNGs store RGBA at 8 bits per channel with
 no color-profile transformation. The integration test compares dimensions
 and all RGBA bytes exactly; visual diffs are diagnostic only. Failures retain
 at most three expected/actual/diff image sets.
+
+## Independent 4:2:2 prediction reference
+
+`test/fixtures/prediction-422.ogv` contains eight synthetic 96 by 64 frames
+at eight frames per second. FFmpeg 8.1.3 and libtheora 1.2.0 generated the
+input without third-party media. FFmpeg's native Theora decoder independently
+produced `prediction-422.yuv`; TheoraJS does not generate expectations.
+
+```sh
+ffmpeg -f lavfi -i testsrc2=size=96x64:rate=8 -frames:v 8 \
+    -pix_fmt yuv422p -c:v libtheora -g 8 -q:v 5 test/fixtures/prediction-422.ogv
+ffmpeg -c:v theora -i test/fixtures/prediction-422.ogv \
+    -fps_mode passthrough -f rawvideo -pix_fmt yuv422p test/fixtures/prediction-422.yuv
+```
+
+The reference contains 98,304 bytes, ordered by frame, then Y, Cb, Cr.
+Plane dimensions are 96 by 64, 48 by 64, and 48 by 64, with strides 96, 48,
+and 48. Rows run top to bottom, with no cropping or RGB conversion.
+Tests normalize TheoraJS's plane orientation and compare every byte, geometry,
+frame count, and key/inter presence. The fixture exercises vertical chroma
+prediction: applying 4:2:0 vertical motion scaling to 4:2:2 must fail comparison.
+Reference generation is separate from test execution.
+
+SHA-256 identities:
+
+- Input: `4aa6029a221d5eee5c7cc16b839cdf8bf27920e83aa2c2cdc010c22acec635d7`
+- Reference: `3373247b5689f328ad99fb2588341a21c53ec32e0fd21dc3cd65522e2e9304d1`
